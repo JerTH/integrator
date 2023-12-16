@@ -1,4 +1,4 @@
-use std::ops::{Add, Sub, AddAssign, SubAssign, Mul, MulAssign, DivAssign, Div, Deref, DerefMut};
+use std::ops::{Add, Sub, AddAssign, SubAssign, Mul, MulAssign, DivAssign, Div};
 
 use crate::FType as Float;
 
@@ -9,6 +9,36 @@ pub struct Vector {
     z: Float,
 }
 
+impl Vector {
+    /// Create a new [Vector] from x, y, and z components
+    pub fn new(x: Float, y: Float, z: Float) -> Self {
+        Self {
+            x, y, z
+        }
+    }
+    
+    /// Calculate the dot product of this and `rhs`
+    /// X = V.V_1
+    pub fn dot(&self, rhs: &Self) -> Float {
+        self.x * rhs.x +
+        self.y * rhs.y +
+        self.z * rhs.z
+    }
+
+    /// Calculate the length of the vector
+    /// L = |V|
+    pub fn length(&self) -> Float {
+        Float::sqrt(&self.x * &self.x + &self.y * &self.y + &self.z * &self.z)
+    }
+
+    /// Calculate a normalized copy of the vector
+    /// V = V/|V|
+    pub fn normalized(&self) -> Self {
+        let len = self.length();
+        Vector::new(self.x / len, self.y / len, self.z / len)
+    }
+}
+
 impl From<Float> for Vector {
     fn from(value: Float) -> Self {
         Vector {
@@ -16,6 +46,12 @@ impl From<Float> for Vector {
             y: value,
             z: value,
         }
+    }
+}
+
+impl From<(Float, Float, Float)> for Vector {
+    fn from(value: (Float, Float, Float)) -> Self {
+        Self::new(value.0, value.1, value.2)
     }
 }
 
@@ -177,17 +213,13 @@ pub struct Point {
     v: Vector,
 }
 
-impl Deref for Point {
-    type Target = Vector;
-
-    fn deref(&self) -> &Self::Target {
-        &self.v
+impl Point {
+    pub fn new(x: f64, y: f64, z: f64) -> Self {
+        Point::from(Vector::new(x, y, z))
     }
-}
 
-impl DerefMut for Point {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.v
+    pub fn as_vector(&self) -> &Vector {
+        &self.v
     }
 }
 
@@ -258,5 +290,25 @@ impl Sub<Vector> for &Point {
 
     fn sub(self, rhs: Vector) -> Self::Output {
         self - &rhs
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test() {
+        let v = Vector::new(1.0, 2.0, 3.0);
+        let p = Point::new(5.0, 5.0, 5.0);
+
+        assert_eq!(Vector::new(2.0, 4.0, 6.0), &v + &v);
+        assert_eq!(Point::new(6.0, 7.0, 8.0), &p + &v);
+
+        const PRECISION: f64 = 1_000_000_000_000i64 as f64;
+        let test_length = (3.7416573867739413 * PRECISION).round() / PRECISION;
+        let real_length = (v.length() * PRECISION).round() / PRECISION;
+        println!("{}, {}", test_length, real_length);
+        assert_eq!(test_length, real_length);
     }
 }
