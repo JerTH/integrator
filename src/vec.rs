@@ -218,8 +218,14 @@ impl Point {
         Point::from(Vector::new(x, y, z))
     }
 
+    #[inline(always)]
     pub fn as_vector(&self) -> &Vector {
         &self.v
+    }
+
+    pub fn distance_to(&self, rhs: &Self) -> f64 {
+        let delta = rhs.as_vector() - self.as_vector();
+        delta.length()
     }
 }
 
@@ -299,16 +305,21 @@ mod test {
 
     #[test]
     fn test() {
+        const PRECISION: f64 = 1_000_000_000_000i64 as f64;
+
         let v = Vector::new(1.0, 2.0, 3.0);
         let p = Point::new(5.0, 5.0, 5.0);
 
         assert_eq!(Vector::new(2.0, 4.0, 6.0), &v + &v);
         assert_eq!(Point::new(6.0, 7.0, 8.0), &p + &v);
 
-        const PRECISION: f64 = 1_000_000_000_000i64 as f64;
         let test_length = (3.7416573867739413 * PRECISION).round() / PRECISION;
         let real_length = (v.length() * PRECISION).round() / PRECISION;
-        println!("{}, {}", test_length, real_length);
         assert_eq!(test_length, real_length);
+
+        let p2 = Point::new(3.0, 1.0, 4.0);
+        let test_distance = (4.58257569495584 * PRECISION).round() / PRECISION;
+        let real_distance = (p.distance_to(&p2) * PRECISION).round() / PRECISION;
+        assert_eq!(test_distance, real_distance);
     }
 }
