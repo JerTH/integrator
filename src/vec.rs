@@ -10,7 +10,7 @@ pub struct Vector {
 
 impl Vector {
     /// Create a new [Vector] from x, y, and z components
-    pub fn new(x: Float, y: Float, z: Float) -> Self {
+    pub const fn new(x: Float, y: Float, z: Float) -> Self {
         Self {
             x, y, z
         }
@@ -24,6 +24,15 @@ impl Vector {
         self.z * rhs.z
     }
 
+    /// Compute the cross product of this and `rhs`
+    pub fn cross<V>(&self, rhs: V) -> Self where V: Deref<Target = Self> {
+        Self {
+            x: (self.y * rhs.z) - (self.z * rhs.y),
+            y: (self.z * rhs.x) - (self.x * rhs.z),
+            z: (self.x * rhs.y) - (self.y * rhs.x),
+        }
+    }
+    
     /// Calculate the length of the [Vector]
     /// L = |V|
     pub fn length(&self) -> Float {
@@ -281,8 +290,8 @@ pub struct Point {
 }
 
 impl Point {
-    pub fn new(x: f64, y: f64, z: f64) -> Self {
-        Point::from(Vector::new(x, y, z))
+    pub const fn new(x: f64, y: f64, z: f64) -> Self {
+        Point { v: Vector::new(x, y, z) }
     }
 
     #[inline(always)]
