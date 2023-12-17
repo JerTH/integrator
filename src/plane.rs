@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use crate::{ Vector, Point };
 use crate::FType as Float;
 
@@ -34,18 +36,20 @@ impl Plane {
     }
 }
 
-impl From<(Point, Point, Point)> for Plane {
-    fn from(points: (Point, Point, Point)) -> Self {
-        let (a, b, c) = (&points.0, &points.1, &points.2);
-        //n = (p1 - p0).cross(p2 - p0);
-        //n = normalize(n);
-        //d = n.dot(p0);
-
+impl<'a, P> From<&'a [P; 3]> for Plane where P: Deref<Target = Point> {
+    fn from(points: &'a [P; 3]) -> Self {
+        let (a, b, c) = (&points[0], &points[1], &points[2]);
         let ab = b.as_vector() - a.as_vector();
         let ac = c.as_vector() - a.as_vector();
         let norm = (ab).cross(&ac);
         let dist = norm.dot(a.as_vector());
 
         Plane { norm, dist }
+    }
+}
+
+impl<P> From<(P, P, P)> for Plane where P: Deref<Target = Point> {
+    fn from(points: (P, P, P)) -> Self {
+        Plane::from(&[points.0, points.1, points.2])
     }
 }

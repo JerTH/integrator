@@ -1,7 +1,7 @@
 use std::ops::{Add, Sub, AddAssign, SubAssign, Mul, MulAssign, DivAssign, Div, Deref};
 use crate::FType as Float;
 
-#[derive(Default, Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Default, Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct Vector {
     x: Float,
     y: Float,
@@ -32,7 +32,7 @@ impl Vector {
             z: (self.x * rhs.y) - (self.y * rhs.x),
         }
     }
-    
+
     /// Calculate the length of the [Vector]
     /// L = |V|
     pub fn length(&self) -> Float {
@@ -284,7 +284,7 @@ impl DivAssign for Vector {
     }
 }
 
-#[derive(Default, Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Default, Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct Point {
     v: Vector,
 }
