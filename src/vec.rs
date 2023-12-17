@@ -55,7 +55,7 @@ impl Vector {
             self.clone()
         }
     }
-
+    
     /// Calculates the resulting [Vector] from the linear interpolation
     /// of `a` to `b`, by the amount of `weight`
     /// # Examples

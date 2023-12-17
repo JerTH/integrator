@@ -34,6 +34,10 @@ impl Plane {
     pub fn distance_to(&self, point: Point) -> Float {
         self.norm.dot(point.as_vector()) * self.dist
     }
+    
+    pub fn point_on_positive_half(&self, point: Point) -> bool {
+        self.distance_to(point).signum() > 0.0
+    }
 }
 
 impl<'a, P> From<&'a [P; 3]> for Plane where P: Deref<Target = Point> {
