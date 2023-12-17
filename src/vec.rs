@@ -1,5 +1,4 @@
-use std::ops::{Add, Sub, AddAssign, SubAssign, Mul, MulAssign, DivAssign, Div};
-
+use std::ops::{Add, Sub, AddAssign, SubAssign, Mul, MulAssign, DivAssign, Div, Deref};
 use crate::FType as Float;
 
 #[derive(Default, Debug, Clone, PartialEq, PartialOrd)]
@@ -16,7 +15,7 @@ impl Vector {
             x, y, z
         }
     }
-    
+
     /// Calculate the dot product of this and `rhs`
     /// X = V.V_1
     pub fn dot(&self, rhs: &Self) -> Float {
@@ -25,17 +24,77 @@ impl Vector {
         self.z * rhs.z
     }
 
-    /// Calculate the length of the vector
+    /// Calculate the length of the [Vector]
     /// L = |V|
     pub fn length(&self) -> Float {
-        Float::sqrt(&self.x * &self.x + &self.y * &self.y + &self.z * &self.z)
+        Float::sqrt(self.length_sq())
     }
 
-    /// Calculate a normalized copy of the vector
+    /// Calculate the squared length of the [Vector]
+    /// Faster than Vector::length()
+    pub fn length_sq(&self) -> Float {
+        &self.x * &self.x + &self.y * &self.y + &self.z * &self.z
+    }
+
+    /// Computes a new [Vector] preserving this vectors direction, with
+    /// its length limited to `length`
+    pub fn limit_length(&self, length: Float) -> Self {
+        if self.length_sq() > (length * length) {
+            let normalized = self.normalized();
+            normalized * length
+        } else {
+            self.clone()
+        }
+    }
+
+    /// Calculates the resulting [Vector] from the linear interpolation
+    /// of `a` to `b`, by the amount of `weight`
+    /// # Examples
+    /// 
+    /// ```
+    /// use integrator::Vector;
+    /// 
+    /// let a = Vector::new(1.0, 1.0, 1.0);
+    /// let b = Vector::new(-1.0, -1.0, -1.0);
+    /// 
+    /// assert_eq!(Vector::new(0.5, 0.5, 0.5), a.lerp(&b, 0.25));
+    /// assert_eq!(Vector::new(0.0, 0.0, 0.0), a.lerp(&b, 0.5));
+    /// assert_eq!(Vector::new(-0.5, -0.5, -0.5), a.lerp(&b, 0.75));
+    /// ```
+    pub fn lerp(&self, to: &Self, weight: Float) -> Self {
+        // a + (b - a) * t 
+        Self {
+            x: self.x + (to.x - self.x) * weight,
+            y: self.y + (to.y - self.y) * weight,
+            z: self.z + (to.z - self.z) * weight,
+        }
+    }
+
+    /// Calculate a normalized copy of the [Vector]
     /// V = V/|V|
     pub fn normalized(&self) -> Self {
         let len = self.length();
         Vector::new(self.x / len, self.y / len, self.z / len)
+    }
+
+    /// Computes a new [Vector] with components clamped between the components
+    /// of `min` and `max`
+    pub fn clamp<V>(&self, min: V, max: V) -> Self where V: Deref<Target = Self> {
+        Self {
+            x: Float::clamp(self.x, min.x, max.x),
+            y: Float::clamp(self.y, min.y, max.y),
+            z: Float::clamp(self.z, min.z, max.z),
+        }
+    }
+
+    /// Returns a new [Vector] with each component set to either 1.0 or -1.0,
+    /// corresponding to the sign of each component of `self` 
+    pub fn sign(&self) -> Self {
+        Self {
+            x: self.x.signum(),
+            y: self.y.signum(),
+            z: self.z.signum(),
+        }
     }
 }
 
@@ -115,11 +174,19 @@ impl Mul for Vector {
     }
 }
 
+impl Mul<Float> for &Vector {
+    type Output = Vector;
+
+    fn mul(self, rhs: Float) -> Self::Output {
+        self * &Vector::from(rhs)
+    }
+}
+
 impl Mul<Float> for Vector {
     type Output = Vector;
 
     fn mul(self, rhs: Float) -> Self::Output {
-        &self * &Vector::from(rhs)
+        &self * rhs
     }
 }
 
@@ -223,9 +290,29 @@ impl Point {
         &self.v
     }
 
+    /// Calculates the distance from this point to `rhs`
+    /// X = |V_1 - V|
     pub fn distance_to(&self, rhs: &Self) -> f64 {
         let delta = rhs.as_vector() - self.as_vector();
         delta.length()
+    }
+
+    /// Calculates the squared distance from this point to `rhs`
+    /// Can be faster than `Point::distance_to()`
+    pub fn distance_to_sq(&self, rhs: &Self) -> f64 {
+        let delta = rhs.as_vector() - self.as_vector();
+        delta.length_sq()
+    }
+    
+    /// Returns a new [Point] with each component snapped to the nearest
+    /// multiple of the corresponding component of `step`
+    pub fn snapped<V>(&self, step: V) -> Self where V: Into<Vector> {
+        let step_vector: Vector = step.into();
+        Point::from(Vector {
+            x: Float::round(self.v.x / step_vector.x) * step_vector.x,
+            y: Float::round(self.v.y / step_vector.y) * step_vector.y,
+            z: Float::round(self.v.z / step_vector.z) * step_vector.z,
+        })
     }
 }
 
