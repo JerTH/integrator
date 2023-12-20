@@ -1,6 +1,5 @@
 use crate::Point;
 
-
 #[derive(Default, Debug, Clone, PartialEq, PartialOrd)]
 pub struct LineSegment {
     a: Point,

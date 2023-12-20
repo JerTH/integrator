@@ -1,5 +1,5 @@
 use std::ops::{Add, Sub, AddAssign, SubAssign, Mul, MulAssign, DivAssign, Div, Deref};
-use crate::FType as Float;
+use crate::Float;
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct Vector {
@@ -44,9 +44,15 @@ impl Vector {
     pub fn length_sq(&self) -> Float {
         &self.x * &self.x + &self.y * &self.y + &self.z * &self.z
     }
-
+    
     /// Computes a new [Vector] preserving this vectors direction, with
     /// its length limited to `length`
+    /// ```
+    /// use integrator::vec::Vector;
+    /// let vector = Vector::new(10.8, 5.4, 10.8);
+    /// let limited = vector.limit_length(3.0);
+    /// assert_eq!(Vector::new(2.0, 1.0, 2.0), limited);
+    /// ```
     pub fn limit_length(&self, length: Float) -> Self {
         if self.length_sq() > (length * length) {
             let normalized = self.normalized();
@@ -105,6 +111,64 @@ impl Vector {
             z: self.z.signum(),
         }
     }
+    
+    pub fn rotate_about_x(&self, radians: Float) -> Self {
+        Vector {
+            x: self.x,
+            y:(self.y * radians.cos()) - (self.z * radians.sin()),
+            z:(self.y * radians.sin()) + (self.z * radians.cos()),
+        }
+    }
+
+    pub fn rotate_about_y(&self, radians: Float) -> Self {
+        Vector {
+            x:(self.x * radians.cos()) + (self.z * radians.sin()),
+            y: self.y,
+            z:(-self.x * radians.sin()) + (self.z * radians.cos()),
+        }
+    }
+
+    pub fn rotate_about_z(&self, radians: Float) -> Self {
+        Vector {
+            x:(self.x * radians.cos()) - (self.y * radians.sin()),
+            y:(self.x * radians.sin()) + (self.y * radians.cos()),
+            z: self.z,
+        }
+    }
+
+    /// Returns a new [Vector] with its X and Y components rotated 90 degrees clockwise about the Z axis
+    /// /// ```
+    /// use integrator::vec::Vector;
+    /// let before = Vector::new(1.0, 0.0, 0.0);
+    /// let rotated = before.rotate_90_xy_cw();
+    /// assert_eq!(Vector::new(0.0, -1.0, 0.0), rotated);
+    /// assert_eq!(Vector::new(-1.0, 0.0, 0.0), rotated.rotate_90_xy_cw());
+    /// ```
+    pub fn rotate_90_xy_cw(&self) -> Self {
+        Vector {
+            x: self.y,
+            y: -self.x,
+            z: self.z
+        }
+        //Vector2 rotated = new Vector2(-original.y, original.x);
+    }
+
+    /// Returns a new [Vector] with its X and Y components rotated 90 degrees counter-clockwise about the Z axis
+    /// ```
+    /// use integrator::vec::Vector;
+    /// let before = Vector::new(1.0, 0.0, 0.0);
+    /// let rotated = before.rotate_90_xy_ccw();
+    /// assert_eq!(Vector::new(0.0, 1.0, 0.0), rotated);
+    /// ```
+    pub fn rotate_90_xy_ccw(&self) -> Self {
+        Vector {
+            x: -self.y,
+            y: self.x,
+            z: self.z
+        }
+        //Vector2 rotated = new Vector2(-original.y, original.x);
+    }
+
 }
 
 impl From<Float> for Vector {

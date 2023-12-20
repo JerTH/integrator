@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use crate::{ Vector, Point };
-use crate::FType as Float;
+use crate::Float;
 
 pub const PLANE_XY: Plane = Plane { norm: Vector::new(0.0, 0.0, 1.0), dist: 0.0 };
 pub const PLANE_XZ: Plane = Plane { norm: Vector::new(0.0, 1.0, 0.0), dist: 0.0 };
@@ -34,7 +34,7 @@ impl Plane {
     pub fn distance_to(&self, point: Point) -> Float {
         self.norm.dot(point.as_vector()) * self.dist
     }
-    
+
     pub fn point_on_positive_half(&self, point: Point) -> bool {
         self.distance_to(point).signum() > 0.0
     }
