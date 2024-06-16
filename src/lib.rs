@@ -24,6 +24,7 @@ pub mod constant;
 pub mod vec;
 pub mod plane;
 pub mod line;
+pub mod percent;
 
 pub use constant::*;
 pub use vec::Vector;

@@ -16,6 +16,14 @@ impl Vector {
         }
     }
 
+    pub const fn zero() -> Self {
+        Self {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0
+        }
+    }
+
     /// Calculate the dot product of this and `rhs`
     /// X = V.V_1
     pub fn dot(&self, rhs: &Self) -> Float {
