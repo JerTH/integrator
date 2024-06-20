@@ -1,4 +1,4 @@
-use crate::Float;
+use crate::{bivec::Bivector, Float};
 use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, PartialOrd)]
@@ -38,6 +38,16 @@ impl Vector {
             x: (self.y * rhs.z) - (self.z * rhs.y),
             y: (self.z * rhs.x) - (self.x * rhs.z),
             z: (self.x * rhs.y) - (self.y * rhs.x),
+        }
+    }
+    
+    #[inline]
+    pub fn wedge<V>(self, v: V) -> Bivector where V: Into<Vector> {
+        let v: Vector = v.into();
+        Bivector {
+            xy: self.x * v.y - self.y * v.x,
+            xz: self.x * v.z - self.z * v.x,
+            yz: self.y * v.z - self.z * v.y,
         }
     }
 
@@ -472,7 +482,7 @@ mod test {
         assert_eq!(r3, v2 * f1);
         assert_eq!(r3, &mut v2 * f1);
     }
-    
+
     #[test]
     fn test() {
         const PRECISION: f64 = 1_000_000_000_000i64 as f64;
