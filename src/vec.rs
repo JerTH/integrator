@@ -1,7 +1,7 @@
-use std::ops::{Add, Sub, AddAssign, SubAssign, MulAssign, DivAssign, Deref};
 use crate::Float;
+use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, PartialOrd)]
 #[repr(C)]
 pub struct Vector {
     pub x: Float,
@@ -12,29 +12,28 @@ pub struct Vector {
 impl Vector {
     /// Create a new [Vector] from x, y, and z components
     pub const fn new(x: Float, y: Float, z: Float) -> Self {
-        Self {
-            x, y, z
-        }
+        Self { x, y, z }
     }
 
     pub const fn zero() -> Self {
         Self {
             x: 0.0,
             y: 0.0,
-            z: 0.0
+            z: 0.0,
         }
     }
 
     /// Calculate the dot product of this and `rhs`
     /// X = V.V_1
     pub fn dot(&self, rhs: &Self) -> Float {
-        self.x * rhs.x +
-        self.y * rhs.y +
-        self.z * rhs.z
+        self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
 
     /// Compute the cross product of this and `rhs`
-    pub fn cross<V>(&self, rhs: V) -> Self where V: Deref<Target = Self> {
+    pub fn cross<V>(&self, rhs: V) -> Self
+    where
+        V: Deref<Target = Self>,
+    {
         Self {
             x: (self.y * rhs.z) - (self.z * rhs.y),
             y: (self.z * rhs.x) - (self.x * rhs.z),
@@ -53,7 +52,7 @@ impl Vector {
     pub fn length_sq(&self) -> Float {
         &self.x * &self.x + &self.y * &self.y + &self.z * &self.z
     }
-    
+
     /// Computes a new [Vector] preserving this vectors direction, with
     /// its length limited to `length`
     /// ```
@@ -70,23 +69,23 @@ impl Vector {
             self.clone()
         }
     }
-    
+
     /// Calculates the resulting [Vector] from the linear interpolation
     /// of `a` to `b`, by the amount of `weight`
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use integrator::Vector;
-    /// 
+    ///
     /// let a = Vector::new(1.0, 1.0, 1.0);
     /// let b = Vector::new(-1.0, -1.0, -1.0);
-    /// 
+    ///
     /// assert_eq!(Vector::new(0.5, 0.5, 0.5), a.lerp(&b, 0.25));
     /// assert_eq!(Vector::new(0.0, 0.0, 0.0), a.lerp(&b, 0.5));
     /// assert_eq!(Vector::new(-0.5, -0.5, -0.5), a.lerp(&b, 0.75));
     /// ```
     pub fn lerp(&self, to: &Self, weight: Float) -> Self {
-        // a + (b - a) * t 
+        // a + (b - a) * t
         Self {
             x: self.x + (to.x - self.x) * weight,
             y: self.y + (to.y - self.y) * weight,
@@ -103,7 +102,10 @@ impl Vector {
 
     /// Computes a new [Vector] with components clamped between the components
     /// of `min` and `max`
-    pub fn clamp<V>(&self, min: V, max: V) -> Self where V: Deref<Target = Self> {
+    pub fn clamp<V>(&self, min: V, max: V) -> Self
+    where
+        V: Deref<Target = Self>,
+    {
         Self {
             x: Float::clamp(self.x, min.x, max.x),
             y: Float::clamp(self.y, min.y, max.y),
@@ -112,7 +114,7 @@ impl Vector {
     }
 
     /// Returns a new [Vector] with each component set to either 1.0 or -1.0,
-    /// corresponding to the sign of each component of `self` 
+    /// corresponding to the sign of each component of `self`
     pub fn sign(&self) -> Self {
         Self {
             x: self.x.signum(),
@@ -120,27 +122,27 @@ impl Vector {
             z: self.z.signum(),
         }
     }
-    
+
     pub fn rotate_about_x(&self, radians: Float) -> Self {
         Vector {
             x: self.x,
-            y:(self.y * radians.cos()) - (self.z * radians.sin()),
-            z:(self.y * radians.sin()) + (self.z * radians.cos()),
+            y: (self.y * radians.cos()) - (self.z * radians.sin()),
+            z: (self.y * radians.sin()) + (self.z * radians.cos()),
         }
     }
 
     pub fn rotate_about_y(&self, radians: Float) -> Self {
         Vector {
-            x:(self.x * radians.cos()) + (self.z * radians.sin()),
+            x: (self.x * radians.cos()) + (self.z * radians.sin()),
             y: self.y,
-            z:(-self.x * radians.sin()) + (self.z * radians.cos()),
+            z: (-self.x * radians.sin()) + (self.z * radians.cos()),
         }
     }
 
     pub fn rotate_about_z(&self, radians: Float) -> Self {
         Vector {
-            x:(self.x * radians.cos()) - (self.y * radians.sin()),
-            y:(self.x * radians.sin()) + (self.y * radians.cos()),
+            x: (self.x * radians.cos()) - (self.y * radians.sin()),
+            y: (self.x * radians.sin()) + (self.y * radians.cos()),
             z: self.z,
         }
     }
@@ -157,7 +159,7 @@ impl Vector {
         Vector {
             x: self.y,
             y: -self.x,
-            z: self.z
+            z: self.z,
         }
         //Vector2 rotated = new Vector2(-original.y, original.x);
     }
@@ -173,11 +175,10 @@ impl Vector {
         Vector {
             x: -self.y,
             y: self.x,
-            z: self.z
+            z: self.z,
         }
         //Vector2 rotated = new Vector2(-original.y, original.x);
     }
-
 }
 
 impl From<Float> for Vector {
@@ -195,46 +196,6 @@ impl From<(Float, Float, Float)> for Vector {
         Self::new(value.0, value.1, value.2)
     }
 }
-
-macro_rules! vector_add {
-    ($lhs:ty, $rhs:ty) => {
-        impl std::ops::Add<$rhs> for $lhs {
-            type Output = Vector;
-            fn add(self, other: $rhs) -> Self::Output {
-                Self::Output {
-                    x: self.x + other.x,
-                    y: self.y + other.y,
-                    z: self.z + other.z,
-                }
-            }
-        }
-    };
-}
-
-vector_add!(Vector, Vector);
-vector_add!(&Vector, Vector);
-vector_add!(Vector, &Vector);
-vector_add!(&Vector, &Vector);
-
-macro_rules! vector_sub {
-    ($lhs:ty, $rhs:ty) => {
-        impl std::ops::Sub<$rhs> for $lhs {
-            type Output = Vector;
-            fn sub(self, other: $rhs) -> Self::Output {
-                Self::Output {
-                    x: self.x - other.x,
-                    y: self.y - other.y,
-                    z: self.z - other.z,
-                }
-            }
-        }
-    };
-}
-
-vector_sub!(Vector, Vector);
-vector_sub!(&Vector, Vector);
-vector_sub!(Vector, &Vector);
-vector_sub!(&Vector, &Vector);
 
 macro_rules! vector_mul {
     ($lhs:ty, $rhs:ty) => {
@@ -255,6 +216,43 @@ vector_mul!(Vector, Float);
 vector_mul!(&Vector, Float);
 vector_mul!(Vector, &Float);
 vector_mul!(&Vector, &Float);
+
+vector_mul!(&mut Vector, Float);
+
+macro_rules! vector_componentwise_binop {
+    ($lhs:ty, $rhs:ty, $func:ident, $trait:ident) => {
+        impl $trait<$rhs> for $lhs {
+            type Output = Vector;
+            fn $func(self, other: $rhs) -> Self::Output {
+                Self::Output {
+                    x: Float::$func(self.x, other.x),
+                    y: Float::$func(self.y, other.y),
+                    z: Float::$func(self.z, other.z),
+                }
+            }
+        }
+    };
+}
+
+vector_componentwise_binop!(Vector, Vector, mul, Mul);
+vector_componentwise_binop!(&Vector, Vector, mul, Mul);
+vector_componentwise_binop!(Vector, &Vector, mul, Mul);
+vector_componentwise_binop!(&Vector, &Vector, mul, Mul);
+
+vector_componentwise_binop!(Vector, Vector, div, Div);
+vector_componentwise_binop!(&Vector, Vector, div, Div);
+vector_componentwise_binop!(Vector, &Vector, div, Div);
+vector_componentwise_binop!(&Vector, &Vector, div, Div);
+
+vector_componentwise_binop!(Vector, Vector, sub, Sub);
+vector_componentwise_binop!(&Vector, Vector, sub, Sub);
+vector_componentwise_binop!(Vector, &Vector, sub, Sub);
+vector_componentwise_binop!(&Vector, &Vector, sub, Sub);
+
+vector_componentwise_binop!(Vector, Vector, add, Add);
+vector_componentwise_binop!(&Vector, Vector, add, Add);
+vector_componentwise_binop!(Vector, &Vector, add, Add);
+vector_componentwise_binop!(&Vector, &Vector, add, Add);
 
 macro_rules! vector_div {
     ($lhs:ty, $rhs:ty) => {
@@ -339,7 +337,9 @@ pub struct Point {
 
 impl Point {
     pub const fn new(x: f64, y: f64, z: f64) -> Self {
-        Point { v: Vector::new(x, y, z) }
+        Point {
+            v: Vector::new(x, y, z),
+        }
     }
 
     #[inline(always)]
@@ -360,10 +360,13 @@ impl Point {
         let delta = rhs.as_vector() - self.as_vector();
         delta.length_sq()
     }
-    
+
     /// Returns a new [Point] with each component snapped to the nearest
     /// multiple of the corresponding component of `step`
-    pub fn snapped<V>(&self, step: V) -> Self where V: Into<Vector> {
+    pub fn snapped<V>(&self, step: V) -> Self
+    where
+        V: Into<Vector>,
+    {
         let step_vector: Vector = step.into();
         Point::from(Vector {
             x: Float::round(self.v.x / step_vector.x) * step_vector.x,
@@ -447,6 +450,29 @@ impl Sub<Vector> for &Point {
 mod test {
     use super::*;
 
+    #[test]
+    fn test_vector_mul() {
+        let v1 = Vector::new(5.0, 3.0, 1.0);
+        let mut v2 = Vector::new(2.0, 4.0, 6.0);
+        let f1 = 3.0;
+
+        let r1 = Vector::new(10.0, 12.0, 6.0);
+        assert_eq!(r1, v1 * v2);
+        assert_eq!(r1, &v1 * v2);
+        assert_eq!(r1, v1 * &v2);
+        assert_eq!(r1, &v1 * &v2);
+        
+        let r2 = Vector::new(15.0, 9.0, 3.0);
+        assert_eq!(r2, v1 * f1);
+        assert_eq!(r2, &v1 * f1);
+        assert_eq!(r2, v1 * &f1);
+        assert_eq!(r2, &v1 * &f1);
+
+        let r3 = Vector::new(6.0, 12.0, 18.0);
+        assert_eq!(r3, v2 * f1);
+        assert_eq!(r3, &mut v2 * f1);
+    }
+    
     #[test]
     fn test() {
         const PRECISION: f64 = 1_000_000_000_000i64 as f64;
