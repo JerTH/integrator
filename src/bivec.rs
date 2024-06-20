@@ -19,6 +19,47 @@ impl Bivector {
             xy, xz, yz,
         }
     }
+
+    #[inline]
+    pub fn zero() -> Self {
+        Self {
+            xy: 0.0,
+            xz: 0.0,
+            yz: 0.0,
+        }
+    }
+
+    #[inline]
+    pub fn unit_xy() -> Self {
+        Self {
+            xy: 1.0,
+            xz: 0.0,
+            yz: 0.0,
+        }
+    }
+
+    #[inline]
+    pub fn unit_xz() -> Self {
+        Self {
+            xy: 0.0,
+            xz: 1.0,
+            yz: 0.0,
+        }
+    }
+
+    #[inline]
+    pub fn unit_yz() -> Self {
+        Self {
+            xy: 0.0,
+            xz: 0.0,
+            yz: 1.0,
+        }
+    }
+
+    #[inline]
+    pub fn from_axis_vector(axis: Vector) -> Self {
+        Self::new(axis.z, -axis.y, axis.x)
+    }
     
     #[inline]
     pub fn from_wedge<V>(u: V, v: V) -> Self where V: Into<Vector> {
