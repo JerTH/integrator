@@ -23,7 +23,7 @@ impl Bivector {
             yz: u.y * v.z - u.z * v.y,
         }
     }
-    
+
     #[inline]
     pub fn magnitude_sq(&self) -> Float {
         self.xy * self.xy
@@ -33,17 +33,5 @@ impl Bivector {
     pub fn magnitude(&self) -> Float {
         self.xy
     }
-
-
-    // Wedge product
-inline Bivector3 Wedge( const Vector3& u, const Vector3& v )
-{
-	Bivector3 ret(
-		u[0]*v[1] - u[1]*v[0], // XY
-		u[0]*v[2] - u[2]*v[0], // XZ
-		u[1]*v[2] - u[2]*v[1]  // YZ
-	);
-	return ret;
-}
 
 }
