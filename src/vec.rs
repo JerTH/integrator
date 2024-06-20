@@ -272,6 +272,30 @@ impl Mul<Float> for Vector {
     }
 }
 
+impl Mul<Vector> for &Float {
+    type Output = Vector;
+
+    fn mul(self, rhs: Vector) -> Self::Output {
+        Vector::from(*self) * rhs
+    }
+}
+
+impl Mul<Vector> for Float {
+    type Output = Vector;
+
+    fn mul(self, rhs: Vector) -> Self::Output {
+        Vector::from(self) * rhs
+    }
+}
+
+impl Mul<&Vector> for &Float {
+    type Output = Vector;
+
+    fn mul(self, rhs: &Vector) -> Self::Output {
+        *self * *rhs
+    }
+}
+
 impl Div for &Vector {
     type Output = Vector;
 
