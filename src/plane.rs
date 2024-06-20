@@ -8,8 +8,8 @@ pub const PLANE_XZ: Plane = Plane { norm: Vector::new(0.0, 1.0, 0.0), dist: 0.0 
 pub const PLANE_YZ: Plane = Plane { norm: Vector::new(1.0, 0.0, 0.0), dist: 0.0 };
 
 pub struct Plane {
-    norm: Vector,
-    dist: Float,
+    pub norm: Vector,
+    pub dist: Float,
 }
 
 impl Plane {

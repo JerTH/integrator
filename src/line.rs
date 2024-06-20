@@ -2,8 +2,8 @@ use crate::Point;
 
 #[derive(Default, Debug, Clone, PartialEq, PartialOrd)]
 pub struct LineSegment {
-    a: Point,
-    b: Point,
+    pub a: Point,
+    pub b: Point,
 }
 
 impl LineSegment {

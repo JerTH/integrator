@@ -22,6 +22,8 @@ pub type Unsigned = types::UType;
 
 pub mod constant;
 pub mod vec;
+pub mod bivec;
+pub mod rotor;
 pub mod plane;
 pub mod line;
 pub mod percent;

@@ -1,11 +1,12 @@
 use std::ops::{Add, Sub, AddAssign, SubAssign, Mul, MulAssign, DivAssign, Div, Deref};
 use crate::Float;
 
-#[derive(Default, Debug, Copy, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
+#[repr(C)]
 pub struct Vector {
-    x: Float,
-    y: Float,
-    z: Float,
+    pub x: Float,
+    pub y: Float,
+    pub z: Float,
 }
 
 impl Vector {
