@@ -14,6 +14,13 @@ pub struct Bivector {
 
 impl Bivector {
     #[inline]
+    pub fn new(xy: Float, xz: Float, yz: Float) -> Self {
+        Self {
+            xy, xz, yz,
+        }
+    }
+    
+    #[inline]
     pub fn from_wedge<V>(u: V, v: V) -> Self where V: Into<Vector> {
         let u: Vector = u.into();
         let v: Vector = v.into();
