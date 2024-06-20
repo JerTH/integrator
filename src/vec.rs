@@ -1,4 +1,4 @@
-use std::ops::{Add, Sub, AddAssign, SubAssign, Mul, MulAssign, DivAssign, Div, Deref};
+use std::ops::{Add, Sub, AddAssign, SubAssign, MulAssign, DivAssign, Deref};
 use crate::Float;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
@@ -196,134 +196,85 @@ impl From<(Float, Float, Float)> for Vector {
     }
 }
 
-impl Add for &Vector {
-    type Output = Vector;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        Self::Output {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-            z: self.z + rhs.z,
+macro_rules! vector_add {
+    ($lhs:ty, $rhs:ty) => {
+        impl std::ops::Add<$rhs> for $lhs {
+            type Output = Vector;
+            fn add(self, other: $rhs) -> Self::Output {
+                Self::Output {
+                    x: self.x + other.x,
+                    y: self.y + other.y,
+                    z: self.z + other.z,
+                }
+            }
         }
-    }
+    };
 }
 
-impl Add for Vector {
-    type Output = Vector;
+vector_add!(Vector, Vector);
+vector_add!(&Vector, Vector);
+vector_add!(Vector, &Vector);
+vector_add!(&Vector, &Vector);
 
-    fn add(self, rhs: Self) -> Self::Output {
-        &self + &rhs
-    }
-}
-
-impl Sub for &Vector {
-    type Output = Vector;
-
-    fn sub(self, rhs: Self) -> Self::Output {
-        Self::Output {
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-            z: self.z - rhs.z,
+macro_rules! vector_sub {
+    ($lhs:ty, $rhs:ty) => {
+        impl std::ops::Sub<$rhs> for $lhs {
+            type Output = Vector;
+            fn sub(self, other: $rhs) -> Self::Output {
+                Self::Output {
+                    x: self.x - other.x,
+                    y: self.y - other.y,
+                    z: self.z - other.z,
+                }
+            }
         }
-    }
+    };
 }
 
-impl Sub for Vector {
-    type Output = Vector;
+vector_sub!(Vector, Vector);
+vector_sub!(&Vector, Vector);
+vector_sub!(Vector, &Vector);
+vector_sub!(&Vector, &Vector);
 
-    fn sub(self, rhs: Self) -> Self::Output {
-        &self + &rhs
-    }
-}
-
-impl Mul for &Vector {
-    type Output = Vector;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        Self::Output {
-            x: self.x * rhs.x,
-            y: self.y * rhs.y,
-            z: self.z * rhs.z,
+macro_rules! vector_mul {
+    ($lhs:ty, $rhs:ty) => {
+        impl std::ops::Mul<$rhs> for $lhs {
+            type Output = Vector;
+            fn mul(self, other: $rhs) -> Self::Output {
+                Self::Output {
+                    x: self.x * other,
+                    y: self.y * other,
+                    z: self.z * other,
+                }
+            }
         }
-    }
+    };
 }
 
-impl Mul for Vector {
-    type Output = Vector;
+vector_mul!(Vector, Float);
+vector_mul!(&Vector, Float);
+vector_mul!(Vector, &Float);
+vector_mul!(&Vector, &Float);
 
-    fn mul(self, rhs: Self) -> Self::Output {
-        &self * &rhs
-    }
-}
-
-impl Mul<Float> for &Vector {
-    type Output = Vector;
-
-    fn mul(self, rhs: Float) -> Self::Output {
-        self * &Vector::from(rhs)
-    }
-}
-
-impl Mul<Float> for Vector {
-    type Output = Vector;
-
-    fn mul(self, rhs: Float) -> Self::Output {
-        &self * rhs
-    }
-}
-
-impl Mul<Vector> for &Float {
-    type Output = Vector;
-
-    fn mul(self, rhs: Vector) -> Self::Output {
-        Vector::from(*self) * rhs
-    }
-}
-
-impl Mul<Vector> for Float {
-    type Output = Vector;
-
-    fn mul(self, rhs: Vector) -> Self::Output {
-        Vector::from(self) * rhs
-    }
-}
-
-impl Mul<&Vector> for &Float {
-    type Output = Vector;
-
-    fn mul(self, rhs: &Vector) -> Self::Output {
-        *self * *rhs
-    }
-}
-
-impl Div for &Vector {
-    type Output = Vector;
-
-    fn div(self, rhs: Self) -> Self::Output {
-        Self::Output {
-            x: self.x / rhs.x,
-            y: self.y / rhs.y,
-            z: self.z / rhs.z,
+macro_rules! vector_div {
+    ($lhs:ty, $rhs:ty) => {
+        impl std::ops::Div<$rhs> for $lhs {
+            type Output = Vector;
+            fn div(self, other: $rhs) -> Self::Output {
+                Self::Output {
+                    x: self.x / other,
+                    y: self.y / other,
+                    z: self.z / other,
+                }
+            }
         }
-    }
+    };
 }
 
-impl Div for Vector {
-    type Output = Vector;
-
-    fn div(self, rhs: Self) -> Self::Output {
-        &self / &rhs
-    }
-}
-
-impl Div<Float> for Vector {
-    type Output = Vector;
-
-    fn div(self, rhs: Float) -> Self::Output {
-        &self / &Vector::from(rhs)
-    }
-}
-
+vector_div!(Vector, Float);
+vector_div!(&Vector, Float);
+vector_div!(Vector, &Float);
+vector_div!(&Vector, &Float);
 
 impl AddAssign<&Self> for Vector {
     fn add_assign(&mut self, rhs: &Self) {
