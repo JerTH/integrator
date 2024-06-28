@@ -10,12 +10,20 @@ pub struct Point {
 }
 
 impl Point {
+    #[inline]
     pub const fn new(x: f64, y: f64, z: f64) -> Self {
-        Point {
+        Self {
             v: Vector::new(x, y, z),
         }
     }
 
+    #[inline]
+    pub const fn origin() -> Self {
+        Self {
+            v: Vector::zero()
+        }
+    }
+    
     #[inline(always)]
     pub fn as_vector(&self) -> &Vector {
         &self.v
