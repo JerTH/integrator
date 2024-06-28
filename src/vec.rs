@@ -162,7 +162,7 @@ impl Vector {
     }
 
     /// Returns a new [Vector] with its X and Y components rotated 90 degrees clockwise about the Z axis
-    /// /// ```
+    /// ```
     /// use integrator::vec::Vector;
     /// let before = Vector::new(1.0, 0.0, 0.0);
     /// let rotated = before.rotate_90_xy_cw();
