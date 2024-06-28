@@ -22,6 +22,7 @@ pub type Unsigned = types::UType;
 
 pub mod constant;
 pub mod vec;
+pub mod point;
 pub mod bivec;
 pub mod rotor;
 pub mod plane;
@@ -30,6 +31,6 @@ pub mod percent;
 
 pub use constant::*;
 pub use vec::Vector;
-pub use vec::Point;
+pub use point::Point;
 pub use plane::Plane;
 pub use line::LineSegment;
