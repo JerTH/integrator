@@ -80,6 +80,10 @@ impl Vector {
         }
     }
 
+    pub fn distance_to(&self, other: &Self) -> Float {
+        (other - self).length()
+    }
+
     /// Calculates the resulting [Vector] from the linear interpolation
     /// of `a` to `b`, by the amount of `weight`
     /// # Examples
@@ -453,6 +457,34 @@ impl Sub<Vector> for &Point {
 
     fn sub(self, rhs: Vector) -> Self::Output {
         self - &rhs
+    }
+}
+
+impl AddAssign<&Vector> for Point {
+    fn add_assign(&mut self, rhs: &Vector) {
+        self.v.x = self.v.x + rhs.x;
+        self.v.y = self.v.y + rhs.y;
+        self.v.z = self.v.z + rhs.z;
+    }
+}
+
+impl AddAssign<Vector> for Point {
+    fn add_assign(&mut self, rhs: Vector) {
+        self.add_assign(&rhs)
+    }
+}
+
+impl SubAssign<&Vector> for Point {
+    fn sub_assign(&mut self, rhs: &Vector) {
+        self.v.x = self.v.x - rhs.x;
+        self.v.y = self.v.y - rhs.y;
+        self.v.z = self.v.z - rhs.z;
+    }
+}
+
+impl SubAssign<Vector> for Point {
+    fn sub_assign(&mut self, rhs: Vector) {
+        self.sub_assign(&rhs)
     }
 }
 
