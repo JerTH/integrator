@@ -2,9 +2,11 @@
 //! Vectors in 3D space
 //! 
 
-use crate::{bivec::Bivector, Float};
 use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use serde::{Serialize, Deserialize};
+use crate::{bivec::Bivector, Float};
 
+#[derive(Serialize, Deserialize)]
 #[derive(Debug, Clone, Copy, Default, PartialEq, PartialOrd)]
 #[repr(C)]
 pub struct Vector {

@@ -1,5 +1,7 @@
 use std::ops::Deref;
 
+use serde::{Serialize, Deserialize};
+
 use crate::{ Vector, Point };
 use crate::Float;
 
@@ -7,6 +9,7 @@ pub const PLANE_XY: Plane = Plane { norm: Vector::new(0.0, 0.0, 1.0), dist: 0.0 
 pub const PLANE_XZ: Plane = Plane { norm: Vector::new(0.0, 1.0, 0.0), dist: 0.0 };
 pub const PLANE_YZ: Plane = Plane { norm: Vector::new(1.0, 0.0, 0.0), dist: 0.0 };
 
+#[derive(Serialize, Deserialize)]
 pub struct Plane {
     pub norm: Vector,
     pub dist: Float,

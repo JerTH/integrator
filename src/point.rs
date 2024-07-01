@@ -2,8 +2,11 @@
 //! Points in 3D space
 //! 
 
+use serde::{Serialize, Deserialize};
+
 use crate::{Float, Vector};
 
+#[derive(Serialize, Deserialize)]
 #[derive(Default, Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct Point {
     v: Vector,

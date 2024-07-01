@@ -2,8 +2,11 @@
 //! Bivector
 //! 
 
+use serde::{Serialize, Deserialize};
+
 use crate::{Float, Vector};
 
+#[derive(Serialize, Deserialize)]
 #[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
 #[repr(C)]
 pub struct Bivector {

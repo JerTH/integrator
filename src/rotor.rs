@@ -3,7 +3,7 @@
 //!
 
 use std::ops::Mul;
-
+use serde::{Serialize, Deserialize};
 use crate::bivec::Bivector;
 use crate::{Float, Vector};
 
@@ -12,6 +12,7 @@ use crate::{Float, Vector};
 // with. Basically, you just constrain the real part to be positive which fixes your interpolation
 // on one half of the Lie-manifold which ensures the arc taken is as short as possible.
 
+#[derive(Serialize, Deserialize)]
 #[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
 #[repr(C)]
 pub struct Rotor {
