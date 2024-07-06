@@ -20,6 +20,7 @@ pub type Float = types::FType;
 pub type Int = types::IType;
 pub type Unsigned = types::UType;
 
+pub mod float;
 pub mod constant;
 pub mod vec;
 pub mod matrix;

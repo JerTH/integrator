@@ -27,16 +27,40 @@ impl Rotor {
             s: scalar,
         }
     }
+    
+    /// Rotate a [Vector] by the rotation represented by this [Rotor]
+    /// 
+    /// ```
+    /// # use integrator::{ Float, vec::Vector, rotor::Rotor, bivec::Bivector };
+    /// let mut from = Vector::new(4.0, 5.0, 3.0).normalized();
+    /// let to = Vector::new(2.0, 5.0, 2.0).normalized();
+    /// let rotor = Rotor::from_rotation_between_vectors(from, to);
+    /// rotor.rotate_vector(&mut from);
+    /// assert!(to.approximately(&from, Float::EPSILON));
+    /// ```
+    pub fn rotate_vector(&self, vector: &mut Vector) {
+        let r = self;
+        let v = vector;
+        let q = Vector::new(
+            r.s * v.x + v.y * r.b.xy + v.z * r.b.xz,
+            r.s * v.y - v.x * r.b.xy + v.z * r.b.yz,
+            r.s * v.z - v.x * r.b.xz - v.y * r.b.yz,
+        );
 
+        let t = v.x * r.b.yz - v.y * r.b.xz + v.z * r.b.xy;
+
+        v.x = r.s * q.x + q.y * r.b.xy + q.z * r.b.xz + t   * r.b.yz;
+        v.y = r.s * q.y - q.x * r.b.xy - t   * r.b.xz + q.z * r.b.yz;
+        v.z = r.s * q.z + t   * r.b.xy - q.x * r.b.xz - q.y * r.b.yz;
+    }
+    
     /// Returns a new `Rotor` that rotates one unit vector to another unit vector
     #[inline]
     pub fn from_rotation_between_vectors(from: Vector, to: Vector) -> Self {
-        let rotor = Rotor {
+        Rotor {
             b: Bivector::from_wedge(to, from),
-            s: 1.0 + to.dot(&from),
-        }
-        .normalized();
-        rotor
+            s: 1.0 + Vector::dot(&to, &from),
+        }.normalized()
     }
 
     /// Returns a new `Rotor` from an angle and a plane, the plane must be normalized
@@ -78,7 +102,7 @@ impl Rotor {
 
     #[inline]
     fn normalize_in_place(&mut self) {
-        let magnitude = self.magnitude_sq();
+        let magnitude = self.magnitude();
         self.s /= magnitude;
         self.b.xy /= magnitude;
         self.b.xz /= magnitude;
@@ -92,8 +116,10 @@ impl Rotor {
 
     #[inline]
     pub fn magnitude_sq(&self) -> Float {
-        let ss = self.s * self.s;
-        self.b.magnitude_sq() + ss
+        self.b.xy * self.b.xy +
+        self.b.xz * self.b.xz +
+        self.b.yz * self.b.yz +
+        self.s * self.s
     }
 }
 

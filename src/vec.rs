@@ -4,7 +4,7 @@
 
 use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use serde::{Serialize, Deserialize};
-use crate::{bivec::Bivector, Float};
+use crate::{bivec::Bivector, float::FloatExt, Float};
 
 #[derive(Serialize, Deserialize)]
 #[derive(Debug, Clone, Copy, Default, PartialEq, PartialOrd)]
@@ -198,6 +198,12 @@ impl Vector {
             z: self.z,
         }
         //Vector2 rotated = new Vector2(-original.y, original.x);
+    }
+
+    pub fn approximately(&self, other: &Self, epsilon: Float) -> bool {
+        self.x.approximately(other.x, epsilon) &&
+        self.y.approximately(other.y, epsilon) &&
+        self.z.approximately(other.z, epsilon)
     }
 }
 
