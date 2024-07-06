@@ -131,6 +131,38 @@ impl std::ops::Sub<Vector> for &Point {
     }
 }
 
+impl std::ops::Sub<&Point> for &Point {
+    type Output = Vector;
+
+    fn sub(self, rhs: &Point) -> Self::Output {
+        self.v - rhs.v
+    }
+}
+
+impl std::ops::Sub<Point> for Point {
+    type Output = Vector;
+
+    fn sub(self, rhs: Point) -> Self::Output {
+        self.v - rhs.v
+    }
+}
+
+impl std::ops::Sub<Point> for &Point {
+    type Output = Vector;
+
+    fn sub(self, rhs: Point) -> Self::Output {
+        self.v - rhs.v
+    }
+}
+
+impl std::ops::Sub<&Point> for Point {
+    type Output = Vector;
+
+    fn sub(self, rhs: &Point) -> Self::Output {
+        self.v - rhs.v
+    }
+}
+
 impl std::ops::AddAssign<&Vector> for Point {
     fn add_assign(&mut self, rhs: &Vector) {
         self.v.x = self.v.x + rhs.x;

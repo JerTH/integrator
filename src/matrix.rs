@@ -10,6 +10,7 @@ pub struct Matrix {
     elements: [[Float; MATRIX_4X4]; MATRIX_4X4],
 }
 
+#[rustfmt::skip]
 impl Matrix {
     pub fn new(elements: &[[Float; MATRIX_4X4]; MATRIX_4X4]) -> Self {
         Self {
@@ -41,6 +42,29 @@ impl Matrix {
             self.row(2)[col],
             self.row(3)[col],
         ]
+    }
+
+    /// Right handed
+    pub fn look_toward(eye: Point, direction: Vector, up: Vector) -> Self {
+        let f = direction.normalized();
+        let s = f.cross(&up).normalized();
+        let u = s.cross(&f);
+
+        let eds = -eye.as_vector().dot(&s);
+        let edu = -eye.as_vector().dot(&u);
+        let edf = eye.as_vector().dot(&f);
+        
+        Matrix::new(&[
+            [s.x, u.x, -f.x, Float::zero()],
+            [s.y, u.y, -f.y, Float::zero()],  
+            [s.z, u.z, -f.z, Float::zero()],  
+            [eds, edu,  edf, Float::one() ],  
+        ])
+    }
+
+    /// Right handed
+    pub fn look_at(eye: Point, target: Point, up: Vector) -> Self {
+        Self::look_toward(eye, target - eye, up)
     }
 }
 
