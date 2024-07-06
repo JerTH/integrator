@@ -27,7 +27,7 @@ impl Rotor {
             s: scalar,
         }
     }
-    
+
     /// Rotate a [Vector] by the rotation represented by this [Rotor]
     /// 
     /// ```
@@ -91,17 +91,12 @@ impl Rotor {
     #[inline]
     pub fn normalized(&self) -> Self {
         let mut normalized = *self;
-        normalized.normalize_in_place();
+        normalized.normalize();
         normalized
     }
-
-    #[inline(always)]
-    pub fn normalize(&mut self) {
-        self.normalize_in_place()
-    }
-
+    
     #[inline]
-    fn normalize_in_place(&mut self) {
+    pub fn normalize(&mut self) {
         let magnitude = self.magnitude();
         self.s /= magnitude;
         self.b.xy /= magnitude;
@@ -120,6 +115,19 @@ impl Rotor {
         self.b.xz * self.b.xz +
         self.b.yz * self.b.yz +
         self.s * self.s
+    }
+
+    #[inline]
+    pub fn reversed(&self) -> Self {
+        let mut reversed = *self;
+        reversed.reverse();
+        reversed
+    }
+
+    pub fn reverse(&mut self) {
+        self.b.xy = -self.b.xy;
+        self.b.xy = -self.b.xz;
+        self.b.xy = -self.b.yz;
     }
 }
 
