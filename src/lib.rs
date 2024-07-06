@@ -22,6 +22,7 @@ pub type Unsigned = types::UType;
 
 pub mod constant;
 pub mod vec;
+pub mod matrix;
 pub mod point;
 pub mod bivec;
 pub mod rotor;
@@ -34,3 +35,23 @@ pub use vec::Vector;
 pub use point::Point;
 pub use plane::Plane;
 pub use line::LineSegment;
+
+trait Zero {
+    fn zero() -> Self;
+}
+
+trait One {
+    fn one() -> Self;
+}
+
+impl Zero for Float {
+    fn zero() -> Self {
+        Float::from(0.0)
+    }
+}
+
+impl One for Float {
+    fn one() -> Self {
+        Float::from(1.0)
+    }
+}
