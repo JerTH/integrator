@@ -21,6 +21,7 @@ pub struct Rotor {
 }
 
 impl Rotor {
+    /// Constructs a new [Rotor] from a [Bivector] and scalar [Float]
     pub fn new(bivector: Bivector, scalar: Float) -> Self {
         Self {
             b: bivector,
@@ -76,6 +77,7 @@ impl Rotor {
         Rotor::new(bv, cosa)
     }
 
+    /// Computes and returns the geometric product of two [Rotor]'s
     #[inline]
     pub fn product(&self, other: &Self) -> Self {
         let p = self;
@@ -88,13 +90,15 @@ impl Rotor {
         r
     }
 
+    /// Computes and returns a normalized version of this [Rotor]
     #[inline]
     pub fn normalized(&self) -> Self {
         let mut normalized = *self;
         normalized.normalize();
         normalized
     }
-    
+
+    /// Normalizes this [Rotor] in place
     #[inline]
     pub fn normalize(&mut self) {
         let magnitude = self.magnitude();
@@ -104,11 +108,15 @@ impl Rotor {
         self.b.yz /= magnitude;
     }
 
+    /// Computes the magnitude (sometimes called length) of this [Rotor]
     #[inline]
     pub fn magnitude(&self) -> Float {
         self.magnitude_sq().sqrt()
     }
 
+    /// Computes and returns the squared magnitude of this [Rotor]
+    /// 
+    /// Slightly faster than [Rotor::magnitude()]
     #[inline]
     pub fn magnitude_sq(&self) -> Float {
         self.b.xy * self.b.xy +
@@ -117,6 +125,7 @@ impl Rotor {
         self.s * self.s
     }
 
+    /// Returns a new [Rotor] that is the reverse (conjugate) of this [Rotor]
     #[inline]
     pub fn reversed(&self) -> Self {
         let mut reversed = *self;
@@ -124,6 +133,7 @@ impl Rotor {
         reversed
     }
 
+    /// Reverses this [Rotor] in place
     pub fn reverse(&mut self) {
         self.b.xy = -self.b.xy;
         self.b.xy = -self.b.xz;
