@@ -4,7 +4,7 @@
 
 use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use serde::{Serialize, Deserialize};
-use crate::{bivec::Bivector, float::FloatExt, Float};
+use crate::{bivec::Bivector, float::FloatExt, rotor::Rotor, Float};
 
 #[derive(Serialize, Deserialize)]
 #[derive(Debug, Clone, Copy, Default, PartialEq, PartialOrd)]
@@ -141,6 +141,16 @@ impl Vector {
             y: self.y.signum(),
             z: self.z.signum(),
         }
+    }
+
+    pub fn rotated(&self, rotation: &Rotor) -> Self {
+        let mut rotated = *self;
+        rotation.rotate_vector(&mut rotated);
+        rotated
+    }
+    
+    pub fn rotate(&mut self, rotation: &Rotor) {
+        rotation.rotate_vector(self)
     }
 
     pub fn rotate_about_x(&self, radians: Float) -> Self {
