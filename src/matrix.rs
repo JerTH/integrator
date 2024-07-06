@@ -2,6 +2,8 @@
 //! Matrices
 //! 
 
+use std::ops::{Index, IndexMut, Mul};
+
 use crate::*;
 pub const MATRIX_4X4: usize = 4usize;
 
@@ -90,5 +92,83 @@ impl Zero for Matrix {
 impl One for Matrix {
     fn one() -> Self {
         Self::from(Float::one())
+    }
+}
+
+impl Mul for &Matrix {
+    type Output = Matrix;
+
+    #[inline]
+    fn mul(self, rhs: Self) -> Self::Output {
+        let lhs = self;
+        let mut out = Matrix::zero();
+        for i in 0..MATRIX_4X4 {
+            for j in 0..MATRIX_4X4 {
+                for k in 0..MATRIX_4X4 {
+                    out[i][j] += lhs[i][k] * rhs[k][j]
+                }
+            } 
+        }
+        out
+    }
+}
+
+impl Mul for Matrix {
+    type Output = Matrix;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        &self * &rhs
+    }
+}
+
+impl Mul<&Matrix> for Matrix {
+    type Output = Matrix;
+
+    fn mul(self, rhs: &Self) -> Self::Output {
+        &self * rhs
+    }
+}
+
+impl Mul<Matrix> for &Matrix {
+    type Output = Matrix;
+
+    fn mul(self, rhs: Matrix) -> Self::Output {
+        self * &rhs
+    }
+}
+
+impl Index<usize> for Matrix {
+    type Output = [Float; MATRIX_4X4];
+    
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.elements[index]
+    }
+}
+
+impl Index<usize> for &Matrix {
+    type Output = [Float; MATRIX_4X4];
+    
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.elements[index]
+    }
+}
+
+impl Index<usize> for &mut Matrix {
+    type Output = [Float; MATRIX_4X4];
+    
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.elements[index]
+    }
+}
+
+impl IndexMut<usize> for Matrix {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.elements[index]
+    }
+}
+
+impl IndexMut<usize> for &mut Matrix {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.elements[index]
     }
 }
