@@ -83,17 +83,6 @@ impl Matrix {
             [eds, edu,  edf, Float::one() ],
         ])
     }
-
-    //mat4 MakeProjectionMatrix(float fovy_rads, float s, float near, float far)
-    //{
-    //    float g = 1.0f / tan(fovy_rads * 0.5);
-    //    float k = far / (far - near);
-    //
-    //    return mat4(g / s,  0.0f,   0.0f,   0.0f,
-    //                 0.0f,  g,      0.0f,   0.0f,
-    //                 0.0f,  0.0f,   k,      -near * k,
-    //                 0.0f,  0.0f,   1.0f,   0.0f);
-    //}
     
     pub fn perspective(fovy: Float, aspect: Float, near: Float, far: Option<Float>) -> Self {
         match far {
@@ -127,22 +116,6 @@ impl Matrix {
                 }
             },
         }
-    }
-
-    pub fn cgmath_perspective() -> Self {
-        let fovy = 45.0;
-        let aspect = 800.0 / 600.0;
-        let mat = cgmath::perspective(cgmath::Deg(fovy), aspect, 0.1, 100.0);
-        Self::convert_matrix(&mat)
-    }
-
-    pub fn look_toward_cgmath(eye: Point, direction: Vector, up: Vector) -> Self {
-        let eye = cgmath::Point3 { x: eye.as_vector().x, y: eye.as_vector().y, z: eye.as_vector().z };
-        let dir = cgmath::Vector3 { x: direction.x, y: direction.y, z: direction.z };
-        let up = cgmath::Vector3 { x: up.x, y: up.y, z: up.z };
-        
-        let mat = cgmath::Matrix4::look_to_rh(eye, dir, up);
-        Self::convert_matrix(&mat)
     }
 
     fn convert_matrix(mat: &cgmath::Matrix4<Float>) -> Matrix {
