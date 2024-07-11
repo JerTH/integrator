@@ -28,7 +28,7 @@ impl Rotor {
             s: scalar,
         }
     }
-
+    
     /// Rotate a [Vector] by the rotation represented by this [Rotor]
     /// 
     /// ```
@@ -63,7 +63,7 @@ impl Rotor {
             s: 1.0 + Vector::dot(&to, &from),
         }.normalized()
     }
-
+    
     /// Returns a new `Rotor` from an angle and a plane, the plane must be normalized
     #[inline]
     pub fn from_angle_and_plane(angle: Float, plane: Bivector) -> Self {
