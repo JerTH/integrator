@@ -1,14 +1,13 @@
 [package]
 name = "integrator"
 description = "A math library"
-version = "0.1.35"
+version = "0.1.36"
 edition = "2021"
 license-file = "LICENSE.txt"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cgmath = "0.18.0"
 serde = {version = "1.0.203", features=["derive"]}
 
 
