@@ -20,7 +20,6 @@ pub type Float = types::FType;
 pub type Int = types::IType;
 pub type Unsigned = types::UType;
 
-pub mod float;
 pub mod constant;
 pub mod vec;
 pub mod matrix;
@@ -34,8 +33,8 @@ pub mod percent;
 pub use constant::*;
 pub use vec::Vector;
 pub use point::Point;
-pub use plane::Plane;
-pub use line::LineSegment;
+pub use matrix::Matrix;
+pub use rotor::Rotor;
 
 trait Zero {
     fn zero() -> Self;
@@ -43,6 +42,10 @@ trait Zero {
 
 trait One {
     fn one() -> Self;
+}
+
+pub trait Approximately {
+    fn approximately(&self, other: &Self, epsilon: Float) -> bool;
 }
 
 impl Zero for Float {
@@ -54,5 +57,22 @@ impl Zero for Float {
 impl One for Float {
     fn one() -> Self {
         Float::from(1.0)
+    }
+}
+
+impl Approximately for Float {
+    /// Computes whether this [Float] is approximately equal to another [Float] using an epsilon
+    fn approximately(&self, other: &Self, epsilon: Float) -> bool {
+        let a = Float::abs(*self);
+        let b = Float::abs(*other);
+        let difference = Float::abs(a - b);
+
+        if self == other {
+            return true;
+        } else if *self == 0.0 || *self == 0.0 || a + b < Self::MIN_POSITIVE {
+            return difference < (epsilon * Self::MIN_POSITIVE)
+        } else {
+            return difference / Self::min(a + b, Self::MAX) < epsilon
+        }
     }
 }

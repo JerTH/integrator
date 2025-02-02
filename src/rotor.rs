@@ -54,10 +54,24 @@ impl Rotor {
         v.y = r.s * q.y - q.x * r.b.xy - t   * r.b.xz + q.z * r.b.yz;
         v.z = r.s * q.z + t   * r.b.xy - q.x * r.b.xz - q.y * r.b.yz;
     }
-    
+
+    /// Rotate this [Rotor] by another [Rotor]
+    pub fn rotate(&mut self, other: &Rotor) {
+        *self = (*self) * *other * (self.reversed())
+    }
+
+    /// Return a new [Rotor] rotated by another [Rotor]
+    pub fn rotated(&self, other: &Rotor) -> Self {
+        let mut rotated = self.clone();
+        rotated.rotate(other);
+        rotated
+    }
+
     /// Returns a new `Rotor` that rotates one unit vector to another unit vector
     #[inline]
     pub fn from_rotation_between_vectors(from: Vector, to: Vector) -> Self {
+        let to = to.normalized();
+        let from = from.normalized();
         Rotor {
             b: Bivector::from_wedge(to, from),
             s: 1.0 + Vector::dot(&to, &from),
@@ -74,9 +88,9 @@ impl Rotor {
             xz: -sina * plane.xz,
             yz: -sina * plane.yz,
         };
-        Rotor::new(bv, cosa)
+        Rotor::new(bv, cosa).normalized()
     }
-
+    
     /// Computes and returns the geometric product of two [Rotor]'s
     #[inline]
     pub fn product(&self, other: &Self) -> Self {
@@ -87,9 +101,10 @@ impl Rotor {
         r.b.xy = p.b.xy * q.s + p.s * q.b.xy + p.b.yz * q.b.xz - p.b.xz * q.b.yz;
         r.b.xz = p.b.xz * q.s + p.s * q.b.xz - p.b.yz * q.b.xy + p.b.xy * q.b.yz;
         r.b.yz = p.b.yz * q.s + p.s * q.b.yz + p.b.xz * q.b.xy - p.b.xy * q.b.xz;
+        r.normalize();
         r
     }
-
+    
     /// Computes and returns a normalized version of this [Rotor]
     #[inline]
     pub fn normalized(&self) -> Self {
@@ -141,11 +156,11 @@ impl Rotor {
     }
 }
 
-impl Mul for Rotor {
+impl Mul<&Rotor> for &Rotor {
     type Output = Rotor;
 
-    fn mul(self, rhs: Rotor) -> Self::Output {
-        self.product(&rhs)
+    fn mul(self, rhs: &Rotor) -> Self::Output {
+        self.product(rhs)
     }
 }
 
@@ -157,10 +172,24 @@ impl Mul<Rotor> for &Rotor {
     }
 }
 
-impl Mul<&Rotor> for &Rotor {
+impl Mul<&Rotor> for Rotor {
     type Output = Rotor;
 
     fn mul(self, rhs: &Rotor) -> Self::Output {
         self.product(rhs)
+    }
+}
+
+impl Mul for Rotor {
+    type Output = Rotor;
+
+    fn mul(self, rhs: Rotor) -> Self::Output {
+        self.product(&rhs)
+    }
+}
+
+impl std::fmt::Display for Rotor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{:+.3}, ({:+.3}, {:+.3}, {:+.3})]", self.s, self.b.xy, self.b.xz, self.b.yz)
     }
 }

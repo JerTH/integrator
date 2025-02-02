@@ -2,9 +2,9 @@
 //! Vectors in 3D space
 //! 
 
-use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use serde::{Serialize, Deserialize};
-use crate::{bivec::Bivector, float::FloatExt, rotor::Rotor, Float};
+use crate::{bivec::Bivector, matrix::Matrix, rotor::Rotor, Approximately, Float};
 
 #[derive(Serialize, Deserialize)]
 #[derive(Debug, Clone, Copy, Default, PartialEq, PartialOrd)]
@@ -27,6 +27,50 @@ impl Vector {
             y: 0.0,
             z: 0.0,
         }
+    }
+
+    pub fn unit_x() -> Self {
+        Self::new(1.0, 0.0, 0.0)
+    }    
+
+    pub fn unit_y() -> Self {
+        Self::new(0.0, 1.0, 0.0)
+    }    
+
+    pub fn unit_z() -> Self {
+        Self::new(0.0, 0.0, 1.0)
+    } 
+    
+    /// Constructs a new unit [Vector] pointing in the canonical up direction
+    /// 
+    /// (0.0, 1.0, 0.0)
+    /// 
+    pub fn up() -> Self {
+        Self::unit_y()
+    }
+
+    /// Constructs a new unit [Vector] pointing in the canonical down direction
+    /// 
+    /// (0.0, -1.0, 0.0)
+    /// 
+    pub fn down() -> Self {
+        -Self::unit_y()
+    }
+
+    /// Constructs a new unit [Vector] pointing in the canonical forward direction
+    /// 
+    /// (0.0, 0.0, 1.0)
+    /// 
+    pub fn forward() -> Self {
+        Self::unit_z()
+    }
+
+    /// Constructs a new unit [Vector] pointing in the canonical backward direction
+    /// 
+    /// (0.0, 0.0, -1.0)
+    /// 
+    pub fn backward() -> Self {
+        -Self::unit_z()
     }
 
     /// Calculate the dot product of this and `rhs`
@@ -143,7 +187,7 @@ impl Vector {
         }
     }
 
-    pub fn rotated(&self, rotation: &Rotor) -> Self {
+    pub fn rotated_by(&self, rotation: &Rotor) -> Self {
         let mut rotated = *self;
         rotation.rotate_vector(&mut rotated);
         rotated
@@ -209,12 +253,14 @@ impl Vector {
         }
         //Vector2 rotated = new Vector2(-original.y, original.x);
     }
+}
 
-    pub fn approximately(&self, other: &Self, epsilon: Float) -> bool {
-        self.x.approximately(other.x, epsilon) &&
-        self.y.approximately(other.y, epsilon) &&
-        self.z.approximately(other.z, epsilon)
-    }
+impl Approximately for Vector {
+    fn approximately(&self, other: &Self, epsilon: Float) -> bool {
+        self.x.approximately(&other.x, epsilon) &&
+        self.y.approximately(&other.y, epsilon) &&
+        self.z.approximately(&other.z, epsilon)
+    }   
 }
 
 impl From<Float> for Vector {
@@ -252,8 +298,28 @@ vector_mul!(Vector, Float);
 vector_mul!(&Vector, Float);
 vector_mul!(Vector, &Float);
 vector_mul!(&Vector, &Float);
-
 vector_mul!(&mut Vector, Float);
+
+macro_rules! vector_mul_reversed {
+    ($lhs:ty, $rhs:ty) => {
+        impl std::ops::Mul<$rhs> for $lhs {
+            type Output = Vector;
+            fn mul(self, other: $rhs) -> Self::Output {
+                Self::Output {
+                    x: self * other.x,
+                    y: self * other.y,
+                    z: self * other.z,
+                }
+            }
+        }
+    };
+}
+
+vector_mul_reversed!(Float, Vector);
+vector_mul_reversed!(&Float, Vector);
+vector_mul_reversed!(Float, &Vector);
+vector_mul_reversed!(&Float, &Vector);
+vector_mul_reversed!(Float, &mut Vector);
 
 macro_rules! vector_componentwise_binop {
     ($lhs:ty, $rhs:ty, $func:ident, $trait:ident) => {
@@ -366,6 +432,60 @@ impl DivAssign for Vector {
     }
 }
 
+impl Neg for Vector {
+    type Output = Vector;
+
+    fn neg(self) -> Self::Output {
+        Vector::new(-self.x, -self.y, -self.z)
+    }
+}
+
+impl std::fmt::Display for Vector {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({:+.3}, {:+.3}, {:+.3})", self.x, self.y, self.z)
+    }
+}
+
+impl Mul<&Matrix> for &Vector {
+    type Output = Vector;
+
+    /// Multiply a [Vector] by a [Matrix] (p' = pM)
+    fn mul(self, rhs: &Matrix) -> Self::Output {
+        let lhs = self;
+        let w = 0.0;
+
+        // Here W is 0.0, we could erase the last term (it might be optimized out anyway)
+        Vector {
+            x: lhs.x * rhs[0][0] + lhs.y * rhs[1][0] + lhs.z * rhs[2][0] + w * rhs[3][0],
+            y: lhs.x * rhs[0][1] + lhs.y * rhs[1][1] + lhs.z * rhs[2][1] + w * rhs[3][1],
+            z: lhs.x * rhs[0][2] + lhs.y * rhs[1][2] + lhs.z * rhs[2][2] + w * rhs[3][2],
+        }
+    }
+}
+
+impl Mul<&Matrix> for Vector {
+    type Output = Vector;
+
+    fn mul(self, rhs: &Matrix) -> Self::Output {
+        &self * rhs
+    }
+}
+
+impl Mul<Matrix> for &Vector {
+    type Output = Vector;
+
+    fn mul(self, rhs: Matrix) -> Self::Output {
+        self * &rhs
+    }
+}
+
+impl Mul<Matrix> for Vector {
+    type Output = Vector;
+
+    fn mul(self, rhs: Matrix) -> Self::Output {
+        &self * &rhs
+    }
+}
 
 #[cfg(test)]
 mod test {

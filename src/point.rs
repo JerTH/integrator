@@ -2,14 +2,16 @@
 //! Points in 3D space
 //! 
 
+use std::ops::Mul;
+
 use serde::{Serialize, Deserialize};
 
-use crate::{Float, Vector};
+use crate::{Approximately, Float, Matrix, Vector};
 
 #[derive(Serialize, Deserialize)]
 #[derive(Default, Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct Point {
-    v: Vector,
+    pub v: Vector,
 }
 
 impl Point {
@@ -59,6 +61,12 @@ impl Point {
             z: Float::round(self.v.z / step_vector.z) * step_vector.z,
         })
     }
+}
+
+impl Approximately for Point {
+    fn approximately(&self, other: &Self, epsilon: Float) -> bool {
+        self.v.approximately(&other.v, epsilon)
+    }   
 }
 
 impl From<Vector> for Point {
@@ -188,5 +196,27 @@ impl std::ops::SubAssign<&Vector> for Point {
 impl std::ops::SubAssign<Vector> for Point {
     fn sub_assign(&mut self, rhs: Vector) {
         self.sub_assign(&rhs)
+    }
+}
+
+impl std::fmt::Display for Point {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({:+.3}, {:+.3}, {:+.3})", self.v.x, self.v.y, self.v.z)
+    }
+}
+
+impl Mul<&Matrix> for &Point {
+    type Output = Vector;
+
+    /// Multiply a [Matrix] by a [Point] (p' = Mp)
+    fn mul(self, rhs: &Matrix) -> Self::Output {
+        let rhs = rhs;
+        let lhs = self.as_vector();
+        let w = 1.0;
+        Vector {
+            x: lhs.x * rhs[0][0] + lhs.y * rhs[0][1] + lhs.z * rhs[0][2] + w * rhs[0][3],
+            y: lhs.x * rhs[1][0] + lhs.y * rhs[1][1] + lhs.z * rhs[1][2] + w * rhs[1][3],
+            z: lhs.x * rhs[2][0] + lhs.y * rhs[2][1] + lhs.z * rhs[2][2] + w * rhs[2][3],
+        }
     }
 }
