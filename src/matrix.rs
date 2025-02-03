@@ -9,23 +9,6 @@ use rotor::Rotor;
 use crate::*;
 pub const MATRIX_4X4: usize = 4usize;
 
-/*
-    Notes:
-        Vulkan View Volume: 
-            X: [-1.0, 1.0]
-            Y: [-1.0, 1.0]
-            Z: [ 0.0, 1.0]
-
-            -Y = UP
-            -X = LEFT
-            Z = FORWARD
-
-        Orthographic View Volume:
-            e.g.:
-                Left, Bottom, Rear
-                Right, Top, Far
-*/
-
 /// A 4x4 Matrix
 /// 
 /// Translation matrices will have the following layout:
@@ -241,6 +224,23 @@ impl Matrix {
             [eds, edu,  edf, Float::one() ],
         ])
     }
+    
+    /*
+    Notes:
+        Vulkan View Volume: 
+            X: [-1.0, 1.0]
+            Y: [-1.0, 1.0]
+            Z: [ 0.0, 1.0]
+
+            -Y = UP
+            -X = LEFT
+            Z = FORWARD
+
+        Orthographic View Volume:
+            e.g.:
+                Left, Bottom, Rear
+                Right, Top, Far
+    */
     
     pub fn perspective(fovy: Float, aspect: Float, near: Float, far: Option<Float>) -> Self {
         match far {
@@ -474,7 +474,7 @@ impl std::fmt::Display for Matrix {
 }
 
 #[cfg(test)]
-mod test {
+mod matrix_tests {
     use crate::{rotor::Rotor, Approximately, Float, Point, Vector};
 
     use super::Matrix;

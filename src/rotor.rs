@@ -5,7 +5,7 @@
 use std::ops::Mul;
 use serde::{Serialize, Deserialize};
 use crate::bivec::Bivector;
-use crate::{Float, Vector};
+use crate::{Approximately, Float, Vector};
 
 // Notes:
 // the "wild rotations" you mention has a very simple solution employed by every engine I've worked
@@ -191,5 +191,143 @@ impl Mul for Rotor {
 impl std::fmt::Display for Rotor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[{:+.3}, ({:+.3}, {:+.3}, {:+.3})]", self.s, self.b.xy, self.b.xz, self.b.yz)
+    }
+}
+
+impl Approximately for Rotor {
+    fn approximately(&self, other: &Self, epsilon: Float) -> bool {
+        return self.s.approximately(&other.s, epsilon)
+            && self.b.approximately(&other.b, epsilon)
+    }
+}
+
+#[cfg(test)]
+mod rotor_tests {
+    use super::*;
+    use std::f64::consts::PI;
+    use crate::{Approximately, Vector};
+
+    const EPSILON: Float = 1e-6;
+
+    fn test_vector() -> Vector {
+        Vector::new(1.0, 0.0, 0.0)
+    }
+
+    #[test]
+    fn identity_rotation() {
+        let mut v = test_vector();
+        let identity = Rotor::new(Bivector::default(), 1.0);
+        identity.rotate_vector(&mut v);
+        assert!(v.approximately(&test_vector(), EPSILON));
+    }
+
+    #[test]
+    fn half_turn_rotation() {
+        let mut v = test_vector();
+        let half_turn = Rotor::from_angle_and_plane(PI, Bivector::unit_xy());
+        half_turn.rotate_vector(&mut v);
+        assert!(v.approximately(&Vector::new(-1.0, 0.0, 0.0), EPSILON));
+    }
+
+    #[test]
+    fn quarter_turn_rotation() {
+        let mut v = test_vector();
+        let quarter_turn = Rotor::from_angle_and_plane(PI/2.0, Bivector::unit_xy());
+        quarter_turn.rotate_vector(&mut v);
+        assert!(v.approximately(&Vector::new(0.0, 1.0, 0.0), EPSILON));
+    }
+
+    #[test]
+    fn vector_rotation_between_vectors() {
+        let from = Vector::unit_x();
+        let to = Vector::unit_y();
+        let rotor = Rotor::from_rotation_between_vectors(from, to);
+        let mut rotated = from;
+        rotor.rotate_vector(&mut rotated);
+        assert!(rotated.approximately(&to, EPSILON));
+    }
+
+    #[test]
+    fn rotor_composition() {
+        let rot_x = Rotor::from_angle_and_plane(PI/2.0, Bivector::unit_xz());
+        let rot_y = Rotor::from_angle_and_plane(PI/2.0, Bivector::unit_yz());
+
+        let mut v = test_vector();
+        let combined = rot_x * rot_y;
+        
+        combined.rotate_vector(&mut v);
+        assert!(v.approximately(&Vector::new(0.0, 0.0, 1.0), EPSILON));
+    }
+
+    #[test]
+    fn normalization() {
+        let unnormalized = Rotor::new(Bivector::new(3.0, 4.0, 0.0), 0.0);
+        let normalized = unnormalized.normalized();
+        assert!(normalized.magnitude().approximately(&1.0, EPSILON));
+    }
+
+    #[test]
+    fn reverse_operation() {
+        let original = Rotor::from_angle_and_plane(PI/4.0, Bivector::unit_xy());
+        let reversed = original.reversed();
+        
+        let mut v = test_vector();
+        original.rotate_vector(&mut v);
+        reversed.rotate_vector(&mut v);
+        assert!(v.approximately(&test_vector(), EPSILON));
+    }
+
+    #[test]
+    fn zero_angle_rotation() {
+        let rotor = Rotor::from_angle_and_plane(0.0, Bivector::unit_xy());
+        let mut v = test_vector();
+        rotor.rotate_vector(&mut v);
+        assert!(v.approximately(&test_vector(), EPSILON));
+    }
+
+    #[test]
+    fn parallel_vector_rotation() {
+        let v = Vector::unit_x();
+        let rotor = Rotor::from_rotation_between_vectors(v, v);
+        assert!(rotor.approximately(&Rotor::default(), EPSILON));
+    }
+
+    #[test]
+    fn opposite_vector_rotation() {
+        let from = Vector::unit_x();
+        let to = -Vector::unit_x();
+        let rotor = Rotor::from_rotation_between_vectors(from, to);
+        let mut rotated = from;
+        rotor.rotate_vector(&mut rotated);
+        assert!(rotated.approximately(&to, EPSILON));
+    }
+
+    #[test]
+    fn rotor_magnitude_properties() {
+        let rotor = Rotor::from_angle_and_plane(PI/3.0, Bivector::unit_xz());
+        assert!(rotor.magnitude_sq().approximately(&rotor.magnitude().powf(2.0), EPSILON));
+    }
+
+    #[test]
+    fn rotor_product_identity() {
+        let id = Rotor::default();
+        let rotor = Rotor::from_angle_and_plane(PI/4.0, Bivector::unit_xy());
+        assert!((rotor * id).approximately(&rotor, EPSILON));
+        assert!((id * rotor).approximately(&rotor, EPSILON));
+    }
+
+    #[test]
+    fn rotor_inverse_property() {
+        let rotor = Rotor::from_angle_and_plane(PI/3.0, Bivector::unit_yz());
+        let inverse = rotor.reversed();
+        assert!((rotor * inverse).approximately(&Rotor::default(), EPSILON));
+    }
+
+    #[test]
+    fn rotor_interaction_with_zero_vector() {
+        let mut v = Vector::zero();
+        let rotor = Rotor::from_angle_and_plane(PI/2.0, Bivector::unit_xy());
+        rotor.rotate_vector(&mut v);
+        assert_eq!(v, Vector::zero());
     }
 }

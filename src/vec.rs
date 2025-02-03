@@ -1,13 +1,12 @@
-//! 
+//!
 //! Vectors in 3D space
-//! 
+//!
 
-use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
-use serde::{Serialize, Deserialize};
 use crate::{bivec::Bivector, matrix::Matrix, rotor::Rotor, Approximately, Float};
+use serde::{Deserialize, Serialize};
+use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-#[derive(Serialize, Deserialize)]
-#[derive(Debug, Clone, Copy, Default, PartialEq, PartialOrd)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq, PartialOrd)]
 #[repr(C)]
 pub struct Vector {
     pub x: Float,
@@ -31,44 +30,44 @@ impl Vector {
 
     pub fn unit_x() -> Self {
         Self::new(1.0, 0.0, 0.0)
-    }    
+    }
 
     pub fn unit_y() -> Self {
         Self::new(0.0, 1.0, 0.0)
-    }    
+    }
 
     pub fn unit_z() -> Self {
         Self::new(0.0, 0.0, 1.0)
-    } 
-    
+    }
+
     /// Constructs a new unit [Vector] pointing in the canonical up direction
-    /// 
+    ///
     /// (0.0, 1.0, 0.0)
-    /// 
+    ///
     pub fn up() -> Self {
         Self::unit_y()
     }
 
     /// Constructs a new unit [Vector] pointing in the canonical down direction
-    /// 
+    ///
     /// (0.0, -1.0, 0.0)
-    /// 
+    ///
     pub fn down() -> Self {
         -Self::unit_y()
     }
 
     /// Constructs a new unit [Vector] pointing in the canonical forward direction
-    /// 
+    ///
     /// (0.0, 0.0, 1.0)
-    /// 
+    ///
     pub fn forward() -> Self {
         Self::unit_z()
     }
 
     /// Constructs a new unit [Vector] pointing in the canonical backward direction
-    /// 
+    ///
     /// (0.0, 0.0, -1.0)
-    /// 
+    ///
     pub fn backward() -> Self {
         -Self::unit_z()
     }
@@ -90,9 +89,12 @@ impl Vector {
             z: (self.x * rhs.y) - (self.y * rhs.x),
         }
     }
-    
+
     #[inline]
-    pub fn wedge<V>(self, v: V) -> Bivector where V: Into<Vector> {
+    pub fn wedge<V>(self, v: V) -> Bivector
+    where
+        V: Into<Vector>,
+    {
         let v: Vector = v.into();
         Bivector {
             xy: self.x * v.y - self.y * v.x,
@@ -192,7 +194,7 @@ impl Vector {
         rotation.rotate_vector(&mut rotated);
         rotated
     }
-    
+
     pub fn rotate(&mut self, rotation: &Rotor) {
         rotation.rotate_vector(self)
     }
@@ -257,10 +259,10 @@ impl Vector {
 
 impl Approximately for Vector {
     fn approximately(&self, other: &Self, epsilon: Float) -> bool {
-        self.x.approximately(&other.x, epsilon) &&
-        self.y.approximately(&other.y, epsilon) &&
-        self.z.approximately(&other.z, epsilon)
-    }   
+        self.x.approximately(&other.x, epsilon)
+            && self.y.approximately(&other.y, epsilon)
+            && self.z.approximately(&other.z, epsilon)
+    }
 }
 
 impl From<Float> for Vector {
@@ -418,6 +420,12 @@ impl MulAssign for Vector {
     }
 }
 
+impl MulAssign<Float> for Vector {
+    fn mul_assign(&mut self, rhs: Float) {
+        *self = *self * rhs
+    }
+}
+
 impl DivAssign<&Self> for Vector {
     fn div_assign(&mut self, rhs: &Self) {
         self.x = self.x / rhs.x;
@@ -488,10 +496,183 @@ impl Mul<Matrix> for Vector {
 }
 
 #[cfg(test)]
-mod test {
+mod vec_tests {
     use crate::Point;
 
     use super::*;
+
+    #[cfg(test)]
+    //use approx::assert_relative_eq;
+    use std::f64::consts::PI;
+
+    #[test]
+    fn test_addition() {
+        let v1 = Vector::new(1.0, 2.0, 3.0);
+        let v2 = Vector::new(4.0, 5.0, 6.0);
+        assert_eq!(v1 + v2, Vector::new(5.0, 7.0, 9.0));
+    }
+
+    #[test]
+    fn test_subtraction() {
+        let v1 = Vector::new(5.0, 5.0, 5.0);
+        let v2 = Vector::new(2.0, 3.0, 4.0);
+        assert_eq!(v1 - v2, Vector::new(3.0, 2.0, 1.0));
+    }
+
+    #[test]
+    fn test_dot_product_perpendicular() {
+        let v1 = Vector::unit_x();
+        let v2 = Vector::unit_y();
+        assert_eq!(v1.dot(&v2), 0.0);
+    }
+
+    #[test]
+    fn test_cross_product() {
+        let cross = Vector::unit_x().cross(&Vector::unit_y());
+        assert_eq!(cross, Vector::unit_z());
+    }
+
+    #[test]
+    fn test_length() {
+        let v = Vector::new(3.0, 4.0, 0.0);
+        assert_eq!(v.length(), 5.0);
+    }
+
+    #[test]
+    fn test_normalization() {
+        let v = Vector::new(3.0, 4.0, 0.0).normalized();
+        assert!(v.length().approximately(&1.0, 1e-6));
+    }
+
+    #[test]
+    fn test_lerp() {
+        let a = Vector::new(1.0, 2.0, 3.0);
+        let b = Vector::new(2.0, 3.0, 4.0);
+        let lerped = a.lerp(&b, 0.5);
+        assert_eq!(lerped, Vector::new(1.5, 2.5, 3.5));
+    }
+
+    #[test]
+    fn test_clamp() {
+        let v = Vector::new(5.0, -2.0, 10.0);
+        let min = Vector::new(0.0, -1.0, 5.0);
+        let max = Vector::new(4.0, 0.0, 8.0);
+        let clamped = v.clamp(&min, &max);
+        assert_eq!(clamped, Vector::new(4.0, -1.0, 8.0));
+    }
+
+    #[test]
+    fn test_sign() {
+        let v = Vector::new(-3.0, 4.0, 0.0);
+        dbg!(v.sign());
+        assert_eq!(v.sign(), Vector::new(-1.0, 1.0, 1.0));
+    }
+    
+    #[test]
+    fn test_rotation_about_z() {
+        let v = Vector::unit_x();
+        let rotated = v.rotate_about_z(PI / 2.0);
+        assert!(rotated.approximately(&Vector::unit_y(), 1e-6));
+    }
+
+    #[test]
+    fn test_wedge_product() {
+        let v1 = Vector::unit_x();
+        let v2 = Vector::unit_y();
+        let bivector = v1.wedge(v2);
+        assert_eq!(bivector.xy, 1.0);
+        assert_eq!(bivector.xz, 0.0);
+        assert_eq!(bivector.yz, 0.0);
+    }
+
+    #[test]
+    fn test_negation() {
+        let v = Vector::new(1.0, -2.0, 3.0);
+        assert_eq!(-v, Vector::new(-1.0, 2.0, -3.0));
+    }
+
+    #[test]
+    fn test_cross_product_zero_vector() {
+        let v1 = Vector::zero();
+        let v2 = Vector::unit_x();
+        let cross = v1.cross(&v2);
+        assert_eq!(cross, Vector::zero());
+    }
+
+    #[test]
+    fn test_distance_to() {
+        let v1 = Vector::new(0.0, 0.0, 0.0);
+        let v2 = Vector::new(3.0, 4.0, 0.0);
+        assert_eq!(v1.distance_to(&v2), 5.0);
+    }
+
+    #[test]
+    fn test_assignment_operators() {
+        let mut v = Vector::new(1.0, 2.0, 3.0);
+        v += Vector::new(0.5, 1.0, 1.5);
+        assert_eq!(v, Vector::new(1.5, 3.0, 4.5));
+        v *= 2.0;
+        assert_eq!(v, Vector::new(3.0, 6.0, 9.0));
+        v -= Vector::new(1.0, 2.0, 3.0);
+        assert_eq!(v, Vector::new(2.0, 4.0, 6.0));
+        v /= Vector::new(2.0, 2.0, 2.0);
+        assert_eq!(v, Vector::new(1.0, 2.0, 3.0));
+    }
+
+    #[test]
+    fn test_componentwise_operations() {
+        let a = Vector::new(2.0, 3.0, 4.0);
+        let b = Vector::new(1.0, 2.0, 0.5);
+        assert_eq!(a * b, Vector::new(2.0, 6.0, 2.0));
+        assert_eq!(a / b, Vector::new(2.0, 1.5, 8.0));
+    }
+
+    #[test]
+    fn test_rotate_90_xy() {
+        let v = Vector::unit_x();
+        let rotated_cw = v.rotate_90_xy_cw();
+        assert_eq!(rotated_cw, Vector::new(0.0, -1.0, 0.0));
+        let rotated_ccw = v.rotate_90_xy_ccw();
+        assert_eq!(rotated_ccw, Vector::new(0.0, 1.0, 0.0));
+    }
+
+    #[test]
+    fn test_limit_length() {
+        let v = Vector::new(6.0, 8.0, 0.0);
+        let limited = v.limit_length(5.0);
+        let expected = Vector::new(3.0, 4.0, 0.0);
+        assert_eq!(limited, expected);
+    }
+
+    #[test]
+    fn test_rotation_about_x() {
+        let v = Vector::unit_y();
+        let rotated = v.rotate_about_x(PI / 2.0);
+        dbg!(rotated);
+        dbg!(Vector::unit_z());
+        assert!(rotated.approximately(&Vector::unit_z(), 1e-6));
+    }
+
+    #[test]
+    fn test_rotation_about_y() {
+        let v = Vector::unit_z();
+        let rotated = v.rotate_about_y(PI / 2.0);
+        assert!(rotated.approximately(&Vector::unit_x(), 1e-6));
+    }
+
+    #[test]
+    fn test_from_tuple() {
+        let tup = (1.0, 2.0, 3.0);
+        let v: Vector = tup.into();
+        assert_eq!(v, Vector::new(1.0, 2.0, 3.0));
+    }
+
+    #[test]
+    fn test_approximately() {
+        let v1 = Vector::new(1.0, 2.0, 3.0);
+        let v2 = Vector::new(1.0 + 1e-7, 2.0 - 1e-7, 3.0 + 1e-7);
+        assert!(v1.approximately(&v2, 1e-6));
+    }
 
     #[test]
     fn test_vector_mul() {
@@ -504,7 +685,7 @@ mod test {
         assert_eq!(r1, &v1 * v2);
         assert_eq!(r1, v1 * &v2);
         assert_eq!(r1, &v1 * &v2);
-        
+
         let r2 = Vector::new(15.0, 9.0, 3.0);
         assert_eq!(r2, v1 * f1);
         assert_eq!(r2, &v1 * f1);

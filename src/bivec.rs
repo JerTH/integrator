@@ -4,7 +4,7 @@
 
 use serde::{Serialize, Deserialize};
 
-use crate::{Float, Vector};
+use crate::{Approximately, Float, Vector};
 
 #[derive(Serialize, Deserialize)]
 #[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
@@ -84,5 +84,12 @@ impl Bivector {
     pub fn magnitude(&self) -> Float {
         self.xy
     }
+}
 
+impl Approximately for Bivector {
+    fn approximately(&self, other: &Self, epsilon: Float) -> bool {
+        self.xy.approximately(&other.xy, epsilon)
+            && self.xz.approximately(&other.xz, epsilon)
+            && self.yz.approximately(&other.yz, epsilon)
+    }
 }
