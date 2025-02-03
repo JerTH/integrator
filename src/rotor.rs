@@ -258,7 +258,7 @@ mod rotor_tests {
         combined.rotate_vector(&mut v);
         assert!(v.approximately(&Vector::new(0.0, 0.0, 1.0), EPSILON));
     }
-
+    
     #[test]
     fn normalization() {
         let unnormalized = Rotor::new(Bivector::new(3.0, 4.0, 0.0), 0.0);

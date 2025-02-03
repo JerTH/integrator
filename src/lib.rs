@@ -63,15 +63,15 @@ impl One for Float {
 impl Approximately for Float {
     fn approximately(&self, other: &Self, epsilon: Float) -> bool {
         if *self == *other { return true; }
-
+        
         debug_assert!(Self::EPSILON <= epsilon);
 
-        let diff = dbg!(Self::abs(*self - *other));
+        let diff = Self::abs(*self - *other);
 
         if diff < epsilon { return true; }
 
-        let norm = dbg!(Self::min(Self::abs(*self) + Self::abs(*other), Self::MAX));
-        let epno = dbg!(epsilon * norm);
+        let norm = Self::min(Self::abs(*self) + Self::abs(*other), Self::MAX);
+        let epno = epsilon * norm;
 
         return diff < Self::max(Self::MIN, epno);
     }
