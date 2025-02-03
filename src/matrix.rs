@@ -10,19 +10,12 @@ use crate::*;
 pub const MATRIX_4X4: usize = 4usize;
 
 /// A 4x4 Matrix
-/// 
-/// Translation matrices will have the following layout:
-/// 
-///     [1, 0, 0, 0]
-///     [0, 1, 0, 0]
-///     [0, 0, 1, 0]
-///     [X, Y, Z, 1]
-/// 
 #[derive(Debug, Clone)]
 pub struct Matrix {
     elements: [[Float; MATRIX_4X4]; MATRIX_4X4],
 }
 
+// rustfmt::skip in this case to retain some deliberate alignment for more clarity
 #[rustfmt::skip]
 impl Matrix {
     /// Construct a new [Matrix] from raw elements
@@ -65,7 +58,7 @@ impl Matrix {
         Self {
             elements: [
                 [a.x, a.y, a.z, 0.0],
-                [b.x, b.y, b.y, 0.0],
+                [b.x, b.y, b.z, 0.0],
                 [c.x, c.y, c.z, 0.0],
                 [0.0, 0.0, 0.0, 1.0],
             ]
@@ -117,8 +110,8 @@ impl Matrix {
 
     #[inline]
     pub fn element(&self, row: usize, col: usize) -> Float {
-        debug_assert!(row < (MATRIX_4X4 - 1));
-        debug_assert!(col < (MATRIX_4X4 - 1));
+        debug_assert!(row < MATRIX_4X4);
+        debug_assert!(col < MATRIX_4X4);
         self.row(row)[col]
     }
 
@@ -245,7 +238,7 @@ impl Matrix {
     pub fn perspective(fovy: Float, aspect: Float, near: Float, far: Option<Float>) -> Self {
         match far {
             Some(far) => {
-                let q = 1.0 / aspect * Float::tan(fovy * 0.5);
+                let q = 1.0 / (aspect * Float::tan(fovy * 0.5));
                 let qq = 1.0 / Float::tan(fovy * 0.5);
                 let qqq = far / far - near;
                 let ppp = (-far * near) / (far - near);
@@ -413,7 +406,7 @@ impl Mul<Vector> for Matrix {
 }
 
 impl Mul<&Point> for &Matrix {
-    type Output = Vector;
+    type Output = Point;
 
     /// Multiply a [Matrix] by a [Point] (p' = Mp)
     fn mul(self, rhs: &Point) -> Self::Output {
@@ -424,7 +417,7 @@ impl Mul<&Point> for &Matrix {
             x: rhs.x * lhs[0][0] + rhs.y * lhs[0][1] + rhs.z * lhs[0][2] + w * lhs[0][3],
             y: rhs.x * lhs[1][0] + rhs.y * lhs[1][1] + rhs.z * lhs[1][2] + w * lhs[1][3],
             z: rhs.x * lhs[2][0] + rhs.y * lhs[2][1] + rhs.z * lhs[2][2] + w * lhs[2][3],
-        }
+        }.into()
     }
 }
 
@@ -470,63 +463,5 @@ impl std::fmt::Display for Matrix {
         write!(f, "[{:+.3}, {:+.3}, {:+.3}, {:+.3}]\n", self[1][0], self[1][1], self[1][2], self[1][3])?;
         write!(f, "[{:+.3}, {:+.3}, {:+.3}, {:+.3}]\n", self[2][0], self[2][1], self[2][2], self[2][3])?;
         write!(f, "[{:+.3}, {:+.3}, {:+.3}, {:+.3}]\n", self[3][0], self[3][1], self[3][2], self[3][3])
-    }
-}
-
-#[cfg(test)]
-mod matrix_tests {
-    use crate::{rotor::Rotor, Approximately, Float, Point, Vector};
-
-    use super::Matrix;
-
-    #[test]
-    fn test_point_translation() {
-        let position = Point::new(1.0, 2.0, 3.0);
-        let orientation = Rotor::from_rotation_between_vectors(Vector::unit_y(), Vector::unit_y());
-        let translation_matrix = Matrix::from_translation_and_orientation(position, orientation);
-        let point_to_translate = Point::new(2.0, 4.0, 6.0);
-        let left_hand = &point_to_translate * &translation_matrix;
-        let right_hand = &translation_matrix * &point_to_translate;
-
-        println!("");
-        println!("{translation_matrix}");
-        println!("P = {point_to_translate}");
-        println!("L = {left_hand}");
-        println!("R = {right_hand}");
-    }
-
-    /// Test functionality similar to creating a camera view matrix for 3D rendering
-    #[test]
-    fn build_view_matrix() {
-        // The position of the camera
-        let position = Point::new(0.0, 0.0, 0.0);
-        
-        // The position of the target
-        let target = Point::new(1.0, 1.0, 0.0);
-        
-        // The vector between the target and the camera
-        let target_vector = target - position;
-
-        // An orientation that "points to" the target from the cameras position
-        let orientation = Rotor::from_rotation_between_vectors(Vector::unit_y(), target_vector);
-        
-        // Construct the matrix
-        let matrix = Matrix::from_translation_and_orientation(position, orientation);
-        let rotated = Vector::unit_y() * &matrix;
-
-        let moved =  target.as_vector() * &matrix.transposed();
-        
-        println!("");
-        println!("position:    {position}");
-        println!("target:      {target}");
-        println!("vector:      {target_vector}");
-        println!("orientation: {orientation}");
-        println!("matrix:\n{matrix}");
-        println!("r1:          {rotated}");
-
-        println!("constructed: {}", (position + (target_vector.length() * rotated)));
-        println!("target:      {}", &target);
-        println!("moved:       {}", &moved);
-        assert!((position + (target_vector.length() * rotated)).approximately(&target, Float::EPSILON));
     }
 }

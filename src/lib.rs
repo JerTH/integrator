@@ -30,6 +30,8 @@ pub mod plane;
 pub mod line;
 pub mod percent;
 
+use std::ops::Neg;
+
 pub use constant::*;
 pub use vec::Vector;
 pub use point::Point;
@@ -63,18 +65,42 @@ impl One for Float {
 impl Approximately for Float {
     fn approximately(&self, other: &Self, epsilon: Float) -> bool {
         if *self == *other { return true; }
+
+        #[cfg(not(feature = "float_ulp_comparisons"))] {
+            return r_approx_eq(*self, *other, epsilon);
+        }
         
-        debug_assert!(Self::EPSILON <= epsilon);
-
-        let diff = Self::abs(*self - *other);
-
-        if diff < epsilon { return true; }
-
-        let norm = Self::min(Self::abs(*self) + Self::abs(*other), Self::MAX);
-        let epno = epsilon * norm;
-
-        return diff < Self::max(Self::MIN, epno);
+        #[cfg(feature = "float_ulp_comparisons")] {
+            unimplemented!();
+        }
     }
+}
+
+pub fn r_approx_eq(a: f64, b: f64, epsilon: f64) -> bool {
+    let epsilon_abs = epsilon * 0.5;
+    let epsilon_rel = epsilon;
+
+    // Handle NaN cases: NaNs are never equal
+    if a.is_nan() || b.is_nan() {
+        return false;
+    }
+
+    // Check for exact equality first (includes infinities and zeros)
+    if a == b {
+        return true;
+    }
+
+    // If one is infinity and the other isn't, they're not equal
+    if a.is_infinite() || b.is_infinite() {
+        return false;
+    }
+
+    // Calculate absolute difference and maximum magnitude
+    let diff = (a - b).abs();
+    let max_abs = a.abs().max(b.abs());
+
+    // Combined absolute and relative tolerance check
+    diff <= epsilon_abs + epsilon_rel * max_abs
 }
 
 #[cfg(test)]
