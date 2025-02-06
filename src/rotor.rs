@@ -5,7 +5,7 @@
 use std::ops::Mul;
 use serde::{Serialize, Deserialize};
 use crate::bivec::Bivector;
-use crate::{Approximately, Float, Vector, EPSILON};
+use crate::{Approximately, Float, Vector};
 
 // Notes:
 // the "wild rotations" you mention has a very simple solution employed by every engine I've worked
@@ -76,7 +76,7 @@ impl Rotor {
         rotated.rotate(other);
         rotated
     }
-    
+
     /// Returns a new `Rotor` that rotates one unit vector to another unit vector
     #[inline]
     pub fn from_rotation_between_vectors(from: Vector, to: Vector) -> Self {

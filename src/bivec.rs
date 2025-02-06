@@ -58,10 +58,10 @@ impl Bivector {
             yz: 1.0,
         }
     }
-
+    
     #[inline]
     pub fn from_axis_vector(axis: Vector) -> Self {
-        Self::new(axis.z, -axis.y, axis.x)
+        Self::new(axis.z, axis.y, axis.x)
     }
     
     #[inline]
