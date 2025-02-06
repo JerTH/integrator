@@ -131,7 +131,6 @@ impl Rotor {
     #[inline]
     pub fn normalize(&mut self) {
         let magnitude = self.magnitude();
-        dbg!(magnitude);
         self.s /= magnitude;
         self.b.xy /= magnitude;
         self.b.xz /= magnitude;
@@ -166,8 +165,8 @@ impl Rotor {
     /// Reverses this [Rotor] in place
     pub fn reverse(&mut self) {
         self.b.xy = -self.b.xy;
-        self.b.xy = -self.b.xz;
-        self.b.xy = -self.b.yz;
+        self.b.xz = -self.b.xz;
+        self.b.yz = -self.b.yz;
     }
 }
 
