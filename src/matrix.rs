@@ -1,6 +1,8 @@
 //!
 //! Matrices
-//! 
+//!
+//! This Matrix code takes a Vulkan-centric opinion. Graphics-related methods like perspective(...)
+//! are designed to work with the Vulkan graphics library and may not work as expected with other libraries
 
 use std::ops::{Index, IndexMut, Mul};
 
@@ -43,12 +45,10 @@ impl Matrix {
     /// Construct a new [Matrix] from an orientation [Rotor]
     /// 
     /// The resulting [Matrix] has the form:
-    /// 
     ///     [ ..X.. , 0]
     ///     [ ..Y.. , 0]
     ///     [ ..Z.. , 0]
     ///     [0, 0, 0, 1]
-    /// 
     #[inline]
     pub fn from_orientation(orientation: Rotor) -> Self {
         let a = Vector::unit_x().rotated_by(&orientation);
@@ -70,20 +70,18 @@ impl Matrix {
     /// This [Matrix] encodes both a translation and a rotation
     /// 
     /// The resulting [Matrix] has the form:
-    /// 
     ///     [ ..X.. , 0]
     ///     [ ..Y.. , 0]
     ///     [ ..Z.. , 0]
     ///     [X, Y, Z, 1]
-    /// 
     #[inline]
     pub fn from_translation_and_orientation(translation: Point, orientation: Rotor) -> Self {
         let t = translation;
         let mut matrix = Self::from_orientation(orientation);
 
-        matrix[3][0] = t.v.x;
-        matrix[3][1] = t.v.y;
-        matrix[3][2] = t.v.z;
+        matrix[3][0] = t.x;
+        matrix[3][1] = t.y;
+        matrix[3][2] = t.z;
         matrix[3][3] = 1.0;
         matrix
     }
@@ -91,12 +89,10 @@ impl Matrix {
     /// Construct a new translation [Matrix] from a [Vector]
     ///
     /// The resulting [Matrix] has the form:
-    /// 
     ///     [0, 0, 0, 0]
     ///     [0, 0, 0, 0]
     ///     [0, 0, 0, 0]
     ///     [X, Y, Z, 1]
-    /// 
     #[inline]
     pub fn from_translation(translation: Vector) -> Self {
         let t = translation;
@@ -234,41 +230,46 @@ impl Matrix {
                 Left, Bottom, Rear
                 Right, Top, Far
     */
-    
-    pub fn perspective(fovy: Float, aspect: Float, near: Float, far: Option<Float>) -> Self {
-        match far {
-            Some(far) => {
-                let q = 1.0 / (aspect * Float::tan(fovy * 0.5));
-                let qq = 1.0 / Float::tan(fovy * 0.5);
-                let qqq = far / far - near;
-                let ppp = (-far * near) / (far - near);
 
-                return Self {
-                    elements: [
-                        [q ,  0.0, 0.0, 0.0],
-                        [0.0, qq , 0.0, 0.0],
-                        [0.0, 0.0, qqq, ppp],
-                        [0.0, 0.0, 1.0, 0.0],
-                    ]
-                }
-            },
-            None => {
-                let g = 1.0 / Float::tan(fovy * 0.5);
-                let gs = g / aspect;
-                let a = 0.0;
-                let b = near;
-                return Self {
-                    elements: [
-                        [gs , 0.0, 0.0, 0.0],
-                        [0.0, g  , 0.0, 0.0],
-                        [0.0, 0.0, a  , b  ],
-                        [0.0, 0.0, 1.0, 0.0],
-                    ]
-                }
-            },
+    /// Construct a Vulkan orthographic projection matrix
+    /// 
+    /// We assume:
+    ///     right = -left
+    ///     top = -bottom
+    #[rustfmt::skip]
+    pub fn orthographic(fovy: Float, aspect: Float, near: Float, far: Float) -> Self {
+        let f = far;
+        let n = near;
+        let h = 2.0 * n * Float::tan(fovy / 2.0); // Near plane height
+        let w = aspect * h; // Near plane width
+        let b = n * Float::tan(fovy / 2.0); // Near plane bottom
+        let r = (n * w / h) * Float::tan(fovy / 2.0); // Near plane right
+        
+        Self {
+            elements: [
+                [1.0/r, 0.0,   0.0,       0.0     ],
+                [0.0,   1.0/b, 0.0,       0.0     ],
+                [0.0,   0.0,   1.0/(f-n), -n/(f-n)],
+                [0.0,   0.0,   0.0,       1.0     ],
+            ]
         }
     }
-    
+
+    /// Construct a Vulkan perspective projection matrix
+    #[rustfmt::skip]
+    pub fn perspective(near: Float, far: Float) -> Self {
+        let n = near;
+        let f = far;
+        Self {
+            elements: [
+                [n,   0.0, 0.0, 0.0 ],
+                [0.0, n,   0.0, 0.0 ],
+                [0.0, 0.0, f+n, -f*n],
+                [0.0, 0.0, 1.0, 0.0 ],
+            ]
+        }
+    }
+
     /// Multiplies two matrices and returns the resulting [Matrix]
     /// 
     /// ```
@@ -308,7 +309,21 @@ impl Matrix {
     }
 }
 
+impl Approximately for Matrix {
+    fn approximately(&self, other: Self, epsilon: Float) -> bool {
+        for i in 0..MATRIX_4X4 {
+            for j in 0..MATRIX_4X4 {
+                if !self[i][j].approximately(other[i][j], epsilon) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+}
+
 impl From<Float> for Matrix {
+    #[rustfmt::skip]
     fn from(value: Float) -> Self {
         Self {
             elements: [
@@ -369,14 +384,13 @@ impl Mul<Matrix> for &Matrix {
 impl Mul<&Vector> for &Matrix {
     type Output = Vector;
 
-    /// Multiply a [Matrix] by a [Vector] (p' = Mp)
+    #[rustfmt::skip]
     fn mul(self, rhs: &Vector) -> Self::Output {
-        let lhs = self;
-        let w = 0.0;
+        // Calculate only 3 components (ignore translation)
         Vector {
-            x: rhs.x * lhs[0][0] + rhs.y * lhs[0][1] + rhs.z * lhs[0][2] + w * lhs[0][3],
-            y: rhs.x * lhs[1][0] + rhs.y * lhs[1][1] + rhs.z * lhs[1][2] + w * lhs[1][3],
-            z: rhs.x * lhs[2][0] + rhs.y * lhs[2][1] + rhs.z * lhs[2][2] + w * lhs[2][3],
+            x: rhs.x * self[0][0] + rhs.y * self[0][1] + rhs.z * self[0][2],
+            y: rhs.x * self[1][0] + rhs.y * self[1][1] + rhs.z * self[1][2],
+            z: rhs.x * self[2][0] + rhs.y * self[2][1] + rhs.z * self[2][2],
         }
     }
 }
@@ -408,22 +422,24 @@ impl Mul<Vector> for Matrix {
 impl Mul<&Point> for &Matrix {
     type Output = Point;
 
-    /// Multiply a [Matrix] by a [Point] (p' = Mp)
+    #[rustfmt::skip]
     fn mul(self, rhs: &Point) -> Self::Output {
+        // Calculate all 4 components using full matrix
         let rhs = rhs.as_vector();
-        let lhs = self;
-        let w = 1.0;
-        Vector {
-            x: rhs.x * lhs[0][0] + rhs.y * lhs[0][1] + rhs.z * lhs[0][2] + w * lhs[0][3],
-            y: rhs.x * lhs[1][0] + rhs.y * lhs[1][1] + rhs.z * lhs[1][2] + w * lhs[1][3],
-            z: rhs.x * lhs[2][0] + rhs.y * lhs[2][1] + rhs.z * lhs[2][2] + w * lhs[2][3],
-        }.into()
+        let x = rhs.x * self[0][0] + rhs.y * self[0][1] + rhs.z * self[0][2] + self[0][3];
+        let y = rhs.x * self[1][0] + rhs.y * self[1][1] + rhs.z * self[1][2] + self[1][3];
+        let z = rhs.x * self[2][0] + rhs.y * self[2][1] + rhs.z * self[2][2] + self[2][3];
+        let w = rhs.x * self[3][0] + rhs.y * self[3][1] + rhs.z * self[3][2] + self[3][3];
+
+        // Perform perspective divide
+        let inv_w = 1.0 / w;
+        Point::new(x * inv_w, y * inv_w, z * inv_w)
     }
 }
 
 impl Index<usize> for Matrix {
     type Output = [Float; MATRIX_4X4];
-    
+
     fn index(&self, index: usize) -> &Self::Output {
         &self.elements[index]
     }
@@ -431,7 +447,7 @@ impl Index<usize> for Matrix {
 
 impl Index<usize> for &Matrix {
     type Output = [Float; MATRIX_4X4];
-    
+
     fn index(&self, index: usize) -> &Self::Output {
         &self.elements[index]
     }
@@ -439,7 +455,7 @@ impl Index<usize> for &Matrix {
 
 impl Index<usize> for &mut Matrix {
     type Output = [Float; MATRIX_4X4];
-    
+
     fn index(&self, index: usize) -> &Self::Output {
         &self.elements[index]
     }
@@ -458,10 +474,97 @@ impl IndexMut<usize> for &mut Matrix {
 }
 
 impl std::fmt::Display for Matrix {
+    #[rustfmt::skip]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[{:+.3}, {:+.3}, {:+.3}, {:+.3}]\n", self[0][0], self[0][1], self[0][2], self[0][3])?;
         write!(f, "[{:+.3}, {:+.3}, {:+.3}, {:+.3}]\n", self[1][0], self[1][1], self[1][2], self[1][3])?;
         write!(f, "[{:+.3}, {:+.3}, {:+.3}, {:+.3}]\n", self[2][0], self[2][1], self[2][2], self[2][3])?;
         write!(f, "[{:+.3}, {:+.3}, {:+.3}, {:+.3}]\n", self[3][0], self[3][1], self[3][2], self[3][3])
+    }
+}
+
+#[cfg(test)]
+mod matrix_tests {
+    use super::*;
+
+    #[test]
+    fn test_look_at() {
+        let eye = Point::origin();
+        let target = Point::new(0.0, 0.0, -1.0);
+        let up = Vector::unit_y();
+        let view = Matrix::look_at(eye, target, up);
+        let expected = Matrix::identity();
+
+        assert!(view.approximately(expected, 1e-6));
+    }
+
+    #[test]
+    fn perspective_aspect_ratio() {
+        let fovy = std::f64::consts::FRAC_PI_2 as Float;
+        let aspect = 2.0; // 2:1 aspect ratio
+        let near = 0.1;
+        let far = 100.0;
+
+        let p = Matrix::perspective(near, far);
+        let o = Matrix::orthographic(fovy, aspect, near, far);
+        let m = p * o;
+
+        let tan_half_fovy = (fovy / 2.0).tan();
+        let expected_x = 1.0 / (aspect * tan_half_fovy);
+        assert!(expected_x.approximately(m[0][0], 1e-6));
+    }
+
+    #[test]
+    fn test_finite_perspective_matrix() {
+        let near = 2.0;
+        let far = 10.0;
+        let fovy = PI / 2.0; // 90 degrees
+        let aspect = 1.0;
+
+        let o = Matrix::orthographic(fovy, aspect, near, far);
+        let p = Matrix::perspective(near, far);
+        let m = o * p;
+
+        // Test far plane projects to 1.0
+        let point_far = Point::new(0.0, 0.0, far);
+        let z_ndc = (&m * &point_far).z;
+
+        assert!(z_ndc.approximately(1.0, 1e-6));
+
+        // Test near plane projects to 0.0
+        let point_near = Point::new(0.0, 0.0, near);
+        let z_ndc = (&m * &point_near).z;
+
+        assert!(z_ndc.approximately(0.0, 1e-6));
+
+        let tan_half_fov = (fovy / 2.0).tan();
+        let expected_m00 = 1.0 / (aspect * tan_half_fov);
+        let expected_m11 = 1.0 / tan_half_fov;
+
+        // Check scaling factors
+        assert!(m.elements[0][0].approximately(expected_m00, 1e-6));
+        assert!(m.elements[1][1].approximately(expected_m11, 1e-6));
+
+        // Check z and w rows
+        let expected_m22 = -far / (near - far);
+        let expected_m23 = (far * near) / (near - far);
+
+        assert!(m.elements[2][2].approximately(expected_m22, 1e-6));
+        assert!(m.elements[2][3].approximately(expected_m23, 1e-6));
+        assert!(m.elements[3][2].approximately(1.0, 1e-6));
+        assert!(m.elements[3][3].approximately(0.0, 1e-6));
+        
+        // Check other elements are zero where expected
+        assert!(m.elements[0][1].approximately(0.0, 1e-6));
+        assert!(m.elements[0][2].approximately(0.0, 1e-6));
+        assert!(m.elements[0][3].approximately(0.0, 1e-6));
+        assert!(m.elements[1][0].approximately(0.0, 1e-6));
+        assert!(m.elements[1][2].approximately(0.0, 1e-6));
+        assert!(m.elements[1][3].approximately(0.0, 1e-6));
+        assert!(m.elements[2][0].approximately(0.0, 1e-6));
+        assert!(m.elements[2][1].approximately(0.0, 1e-6));
+        assert!(m.elements[3][0].approximately(0.0, 1e-6));
+        assert!(m.elements[3][1].approximately(0.0, 1e-6));
+        assert!(m.elements[3][3].approximately(0.0, 1e-6));
     }
 }

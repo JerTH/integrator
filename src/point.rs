@@ -1,37 +1,38 @@
 //!
 //! Points in 3D space
-//! 
+//!
 
 use std::ops::Mul;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{Approximately, Float, Matrix, Vector};
 
-#[derive(Serialize, Deserialize)]
-#[derive(Default, Debug, Copy, Clone, PartialEq, PartialOrd)]
+#[derive(Serialize, Deserialize, Default, Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct Point {
-    pub v: Vector,
+    pub x: Float,
+    pub y: Float,
+    pub z: Float,
 }
 
 impl Point {
     #[inline]
     pub const fn new(x: f64, y: f64, z: f64) -> Self {
-        Self {
-            v: Vector::new(x, y, z),
-        }
+        Self { x, y, z }
     }
 
     #[inline]
     pub const fn origin() -> Self {
         Self {
-            v: Vector::zero()
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
         }
     }
-    
+
     #[inline(always)]
-    pub fn as_vector(&self) -> &Vector {
-        &self.v
+    pub fn as_vector(&self) -> Vector {
+        Vector::new(self.x, self.y, self.z)
     }
 
     /// Calculates the distance from this point to `rhs`
@@ -56,22 +57,37 @@ impl Point {
     {
         let step_vector: Vector = step.into();
         Point::from(Vector {
-            x: Float::round(self.v.x / step_vector.x) * step_vector.x,
-            y: Float::round(self.v.y / step_vector.y) * step_vector.y,
-            z: Float::round(self.v.z / step_vector.z) * step_vector.z,
+            x: Float::round(self.x / step_vector.x) * step_vector.x,
+            y: Float::round(self.y / step_vector.y) * step_vector.y,
+            z: Float::round(self.z / step_vector.z) * step_vector.z,
         })
+    }
+
+    #[inline(always)]
+    pub fn w(&self) -> Float {
+        0.0
     }
 }
 
 impl Approximately for Point {
-    fn approximately(&self, other: &Self, epsilon: Float) -> bool {
-        self.v.approximately(&other.v, epsilon)
-    }   
+    fn approximately(&self, other: Self, epsilon: Float) -> bool {
+        self.x.approximately(other.x, epsilon)
+            && self.y.approximately(other.y, epsilon)
+            && self.z.approximately(other.z, epsilon)
+    }
+}
+
+impl Approximately for &Point {
+    fn approximately(&self, other: Self, epsilon: Float) -> bool {
+        self.x.approximately(other.x, epsilon)
+            && self.y.approximately(other.y, epsilon)
+            && self.z.approximately(other.z, epsilon)
+    }
 }
 
 impl From<Vector> for Point {
     fn from(value: Vector) -> Self {
-        Point { v: value }
+        Point::new(value.x, value.y, value.z)
     }
 }
 
@@ -79,7 +95,7 @@ impl std::ops::Add<&Vector> for &Point {
     type Output = Point;
 
     fn add(self, rhs: &Vector) -> Self::Output {
-        Point::from(&self.v + rhs)
+        Point::from(&self.as_vector() + rhs)
     }
 }
 
@@ -111,7 +127,7 @@ impl std::ops::Sub<&Vector> for &Point {
     type Output = Point;
 
     fn sub(self, rhs: &Vector) -> Self::Output {
-        Point::from(&self.v - rhs)
+        Point::from(&self.as_vector() - rhs)
     }
 }
 
@@ -143,7 +159,7 @@ impl std::ops::Sub<&Point> for &Point {
     type Output = Vector;
 
     fn sub(self, rhs: &Point) -> Self::Output {
-        self.v - rhs.v
+        self.as_vector() - rhs.as_vector()
     }
 }
 
@@ -151,7 +167,7 @@ impl std::ops::Sub<Point> for Point {
     type Output = Vector;
 
     fn sub(self, rhs: Point) -> Self::Output {
-        self.v - rhs.v
+        self.as_vector() - rhs.as_vector()
     }
 }
 
@@ -159,7 +175,7 @@ impl std::ops::Sub<Point> for &Point {
     type Output = Vector;
 
     fn sub(self, rhs: Point) -> Self::Output {
-        self.v - rhs.v
+        self.as_vector() - rhs.as_vector()
     }
 }
 
@@ -167,15 +183,15 @@ impl std::ops::Sub<&Point> for Point {
     type Output = Vector;
 
     fn sub(self, rhs: &Point) -> Self::Output {
-        self.v - rhs.v
+        self.as_vector() - rhs.as_vector()
     }
 }
 
 impl std::ops::AddAssign<&Vector> for Point {
     fn add_assign(&mut self, rhs: &Vector) {
-        self.v.x = self.v.x + rhs.x;
-        self.v.y = self.v.y + rhs.y;
-        self.v.z = self.v.z + rhs.z;
+        self.x = self.x + rhs.x;
+        self.y = self.y + rhs.y;
+        self.z = self.z + rhs.z;
     }
 }
 
@@ -187,9 +203,9 @@ impl std::ops::AddAssign<Vector> for Point {
 
 impl std::ops::SubAssign<&Vector> for Point {
     fn sub_assign(&mut self, rhs: &Vector) {
-        self.v.x = self.v.x - rhs.x;
-        self.v.y = self.v.y - rhs.y;
-        self.v.z = self.v.z - rhs.z;
+        self.x = self.x - rhs.x;
+        self.y = self.y - rhs.y;
+        self.z = self.z - rhs.z;
     }
 }
 
@@ -201,7 +217,7 @@ impl std::ops::SubAssign<Vector> for Point {
 
 impl std::fmt::Display for Point {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({:+.3}, {:+.3}, {:+.3})", self.v.x, self.v.y, self.v.z)
+        write!(f, "({:+.3}, {:+.3}, {:+.3})", self.x, self.y, self.z)
     }
 }
 

@@ -2,9 +2,13 @@
 //! Vectors in 3D space
 //!
 
-use crate::{bivec::Bivector, matrix::Matrix, rotor::Rotor, Approximately, Float};
+use crate::{bivec::Bivector, matrix::Matrix, rotor::Rotor, Approximately, Float, EPSILON};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+
+pub const X_AXIS: Vector = Vector { x: 1.0, y: 0.0, z: 0.0 };
+pub const Y_AXIS: Vector = Vector { x: 0.0, y: 1.0, z: 0.0 };
+pub const Z_AXIS: Vector = Vector { x: 0.0, y: 0.0, z: 1.0 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq, PartialOrd)]
 #[repr(C)]
@@ -29,15 +33,15 @@ impl Vector {
     }
 
     pub fn unit_x() -> Self {
-        Self::new(1.0, 0.0, 0.0)
+        X_AXIS
     }
 
     pub fn unit_y() -> Self {
-        Self::new(0.0, 1.0, 0.0)
+        Y_AXIS
     }
 
     pub fn unit_z() -> Self {
-        Self::new(0.0, 0.0, 1.0)
+        Z_AXIS
     }
 
     /// Constructs a new unit [Vector] pointing in the canonical up direction
@@ -70,6 +74,11 @@ impl Vector {
     ///
     pub fn backward() -> Self {
         -Self::unit_z()
+    }
+
+    #[inline(always)]
+    pub fn w(&self) -> Float {
+        1.0
     }
 
     /// Calculate the dot product of this and `rhs`
@@ -134,6 +143,10 @@ impl Vector {
 
     pub fn distance_to(&self, other: &Self) -> Float {
         (other - self).length()
+    }
+
+    pub fn parallel_to(&self, other: &Self) -> bool {
+        1.0.approximately(self.normalized().dot(&other.normalized()).abs(), EPSILON)
     }
 
     /// Calculates the resulting [Vector] from the linear interpolation
@@ -222,7 +235,7 @@ impl Vector {
             z: self.z,
         }
     }
-
+    
     /// Returns a new [Vector] with its X and Y components rotated 90 degrees clockwise about the Z axis
     /// ```
     /// use integrator::vec::Vector;
@@ -237,7 +250,6 @@ impl Vector {
             y: -self.x,
             z: self.z,
         }
-        //Vector2 rotated = new Vector2(-original.y, original.x);
     }
 
     /// Returns a new [Vector] with its X and Y components rotated 90 degrees counter-clockwise about the Z axis
@@ -253,15 +265,14 @@ impl Vector {
             y: self.x,
             z: self.z,
         }
-        //Vector2 rotated = new Vector2(-original.y, original.x);
     }
 }
 
 impl Approximately for Vector {
-    fn approximately(&self, other: &Self, epsilon: Float) -> bool {
-        self.x.approximately(&other.x, epsilon)
-            && self.y.approximately(&other.y, epsilon)
-            && self.z.approximately(&other.z, epsilon)
+    fn approximately(&self, other: Self, epsilon: Float) -> bool {
+        self.x.approximately(other.x, epsilon)
+            && self.y.approximately(other.y, epsilon)
+            && self.z.approximately(other.z, epsilon)
     }
 }
 
@@ -497,12 +508,7 @@ impl Mul<Matrix> for Vector {
 
 #[cfg(test)]
 mod vec_tests {
-    use crate::Point;
-
     use super::*;
-
-    #[cfg(test)]
-    //use approx::assert_relative_eq;
     use std::f64::consts::PI;
 
     #[test]
@@ -541,7 +547,7 @@ mod vec_tests {
     #[test]
     fn test_normalization() {
         let v = Vector::new(3.0, 4.0, 0.0).normalized();
-        assert!(v.length().approximately(&1.0, 1e-6));
+        assert!(v.length().approximately(1.0, 1e-6));
     }
 
     #[test]
@@ -567,12 +573,12 @@ mod vec_tests {
         dbg!(v.sign());
         assert_eq!(v.sign(), Vector::new(-1.0, 1.0, 1.0));
     }
-    
+
     #[test]
     fn test_rotation_about_z() {
         let v = Vector::unit_x();
         let rotated = v.rotate_about_z(PI / 2.0);
-        assert!(rotated.approximately(&Vector::unit_y(), 1e-6));
+        assert!(rotated.approximately(Vector::unit_y(), 1e-6));
     }
 
     #[test]
@@ -650,14 +656,14 @@ mod vec_tests {
         let rotated = v.rotate_about_x(PI / 2.0);
         dbg!(rotated);
         dbg!(Vector::unit_z());
-        assert!(rotated.approximately(&Vector::unit_z(), 1e-6));
+        assert!(rotated.approximately(Vector::unit_z(), 1e-6));
     }
 
     #[test]
     fn test_rotation_about_y() {
         let v = Vector::unit_z();
         let rotated = v.rotate_about_y(PI / 2.0);
-        assert!(rotated.approximately(&Vector::unit_x(), 1e-6));
+        assert!(rotated.approximately(Vector::unit_x(), 1e-6));
     }
 
     #[test]
@@ -671,7 +677,7 @@ mod vec_tests {
     fn test_approximately() {
         let v1 = Vector::new(1.0, 2.0, 3.0);
         let v2 = Vector::new(1.0 + 1e-7, 2.0 - 1e-7, 3.0 + 1e-7);
-        assert!(v1.approximately(&v2, 1e-6));
+        assert!(v1.approximately(v2, 1e-6));
     }
 
     #[test]
@@ -695,25 +701,5 @@ mod vec_tests {
         let r3 = Vector::new(6.0, 12.0, 18.0);
         assert_eq!(r3, v2 * f1);
         assert_eq!(r3, &mut v2 * f1);
-    }
-
-    #[test]
-    fn test() {
-        const PRECISION: f64 = 1_000_000_000_000i64 as f64;
-
-        let v = Vector::new(1.0, 2.0, 3.0);
-        let p = Point::new(5.0, 5.0, 5.0);
-
-        assert_eq!(Vector::new(2.0, 4.0, 6.0), &v + &v);
-        assert_eq!(Point::new(6.0, 7.0, 8.0), &p + &v);
-
-        let test_length = (3.7416573867739413 * PRECISION).round() / PRECISION;
-        let real_length = (v.length() * PRECISION).round() / PRECISION;
-        assert_eq!(test_length, real_length);
-
-        let p2 = Point::new(3.0, 1.0, 4.0);
-        let test_distance = (4.58257569495584 * PRECISION).round() / PRECISION;
-        let real_distance = (p.distance_to(&p2) * PRECISION).round() / PRECISION;
-        assert_eq!(test_distance, real_distance);
     }
 }

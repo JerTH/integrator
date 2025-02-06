@@ -30,8 +30,6 @@ pub mod plane;
 pub mod line;
 pub mod percent;
 
-use std::ops::Neg;
-
 pub use constant::*;
 pub use vec::Vector;
 pub use point::Point;
@@ -47,7 +45,7 @@ trait One {
 }
 
 pub trait Approximately {
-    fn approximately(&self, other: &Self, epsilon: Float) -> bool;
+    fn approximately(&self, other: Self, epsilon: Float) -> bool;
 }
 
 impl Zero for Float {
@@ -62,12 +60,12 @@ impl One for Float {
     }
 }
 
-impl Approximately for Float {
-    fn approximately(&self, other: &Self, epsilon: Float) -> bool {
-        if *self == *other { return true; }
+impl Approximately for &Float {
+    fn approximately(&self, other: Self, epsilon: Float) -> bool {
+        if *self == other { return true; }
 
         #[cfg(not(feature = "float_ulp_comparisons"))] {
-            return r_approx_eq(*self, *other, epsilon);
+            return r_approx_eq(**self, *other, epsilon);
         }
         
         #[cfg(feature = "float_ulp_comparisons")] {
@@ -76,6 +74,19 @@ impl Approximately for Float {
     }
 }
 
+impl Approximately for Float {
+    fn approximately(&self, other: Self, epsilon: Float) -> bool {
+        #[cfg(not(feature = "float_ulp_comparisons"))] {
+            return r_approx_eq(*self, other, epsilon);
+        }
+        
+        #[cfg(feature = "float_ulp_comparisons")] {
+            unimplemented!();
+        }
+    }
+}
+
+#[inline(always)]
 pub fn r_approx_eq(a: f64, b: f64, epsilon: f64) -> bool {
     let epsilon_abs = epsilon * 0.5;
     let epsilon_rel = epsilon;
@@ -104,7 +115,7 @@ pub fn r_approx_eq(a: f64, b: f64, epsilon: f64) -> bool {
 }
 
 #[cfg(test)]
-mod lib_tests {
+mod equality_tests {
     use super::*;
     use std::f64::{INFINITY, NAN, NEG_INFINITY};
 
@@ -112,36 +123,36 @@ mod lib_tests {
     fn exact_equality() {
         let a = 1.0_f64;
         let b = 1.0_f64;
-        assert!(a.approximately(&b, 0.0));
-        assert!(a.approximately(&b, f64::EPSILON));
+        assert!(a.approximately(b, 0.0));
+        assert!(a.approximately(b, f64::EPSILON));
     }
 
     #[test]
     fn difference_equals_epsilon() {
         let a = 1.0;
         let b = 1.0 + 0.5;
-        assert!(a.approximately(&b, 0.5));
-        assert!(b.approximately(&a, 0.5));
+        assert!(a.approximately(b, 0.5));
+        assert!(b.approximately(a, 0.5));
     }
 
     #[test]
     fn difference_exceeds_epsilon() {
         let a = 1.0;
         let b = 1.0 + 0.5 + f64::EPSILON;
-        assert!(!a.approximately(&b, 0.5));
+        assert!(!a.approximately(b, 0.5));
     }
 
     #[test]
     fn zero_edge_cases() {
-        assert!(0.0.approximately(&0.0, 0.0));
-        assert!(0.0.approximately(&1e-10, 1e-5));
-        assert!(!0.0.approximately(&1e-5, 1e-6));
+        assert!(0.0.approximately(0.0, 0.0));
+        assert!(0.0.approximately(1e-10, 1e-5));
+        assert!(!0.0.approximately(1e-5, 1e-6));
     }
 
     #[test]
     fn opposite_signs() {
-        assert!(!5.0.approximately(&-5.0, 9.9));
-        assert!(5.0.approximately(&-5.0, 10.1));
+        assert!(!5.0.approximately(-5.0, 9.9));
+        assert!(5.0.approximately(-5.0, 10.1));
     }
 
     #[test]
@@ -149,38 +160,38 @@ mod lib_tests {
         let min = f64::MIN_POSITIVE;
         let a = min;
         let b = min + min / 2.0;
-        assert!(a.approximately(&b, min));
+        assert!(a.approximately(b, min));
     }
 
     #[test]
     fn nan_handling() {
-        assert!(!NAN.approximately(&NAN, f64::MAX));
-        assert!(!NAN.approximately(&1.0, f64::MAX));
-        assert!(!1.0.approximately(&NAN, f64::MAX));
+        assert!(!NAN.approximately(NAN, f64::MAX));
+        assert!(!NAN.approximately(1.0, f64::MAX));
+        assert!(!1.0.approximately(NAN, f64::MAX));
     }
 
     #[test]
     fn infinity_handling() {
-        assert!(INFINITY.approximately(&INFINITY, 0.0));
-        assert!(!INFINITY.approximately(&NEG_INFINITY, f64::MAX));
-        assert!(!INFINITY.approximately(&1.0, f64::MAX));
-        assert!(!1.0.approximately(&INFINITY, f64::MAX));
+        assert!(INFINITY.approximately(INFINITY, 0.0));
+        assert!(!INFINITY.approximately(NEG_INFINITY, f64::MAX));
+        assert!(!INFINITY.approximately(1.0, f64::MAX));
+        assert!(!1.0.approximately(INFINITY, f64::MAX));
     }
 
     #[test]
     fn large_numbers() {
         let a = 1e20;
         let b = a + 1e15;
-        assert!(a.approximately(&b, 1e16));
-        assert!(!a.approximately(&b, 1e14));
+        assert!(a.approximately(b, 1e16));
+        assert!(!a.approximately(b, 1e14));
     }
 
     #[test]
     fn tiny_epsilon() {
         let a = 1.0 + 2.0 * f64::EPSILON;
         let b = 1.0;
-        assert!(!a.approximately(&b, f64::EPSILON));
-        assert!(a.approximately(&b, 3.0 * f64::EPSILON));
+        assert!(!a.approximately(b, f64::EPSILON));
+        assert!(a.approximately(b, 3.0 * f64::EPSILON));
     }
 
     #[test]
@@ -189,8 +200,8 @@ mod lib_tests {
         let b = 1.000_000_1;
         let eps = 0.000_000_2;
         assert_eq!(
-            a.approximately(&b, eps),
-            b.approximately(&a, eps)
+            a.approximately(b, eps),
+            b.approximately(a, eps)
         );
     }
 
@@ -200,8 +211,8 @@ mod lib_tests {
         let b = 1.000_000_05;
         let c = 1.000_000_1;
         let eps = 0.000_000_2;
-        assert!(a.approximately(&b, eps));
-        assert!(b.approximately(&c, eps));
-        assert!(a.approximately(&c, eps));
+        assert!(a.approximately(b, eps));
+        assert!(b.approximately(c, eps));
+        assert!(a.approximately(c, eps));
     }
 }

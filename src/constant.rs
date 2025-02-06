@@ -1,5 +1,8 @@
 //! Various useful constants
 
+/// Default epsilon used for comparisons
+pub const EPSILON: crate::Float = 1e-6;
+
 /// Pi π, 3.141592653589793238462643383279502884197169399375105820974944592...
 pub const PI: crate::Float = 3.141592653589793238462643383279502884197169399375105820974944592;
 

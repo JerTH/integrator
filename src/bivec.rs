@@ -87,9 +87,9 @@ impl Bivector {
 }
 
 impl Approximately for Bivector {
-    fn approximately(&self, other: &Self, epsilon: Float) -> bool {
-        self.xy.approximately(&other.xy, epsilon)
-            && self.xz.approximately(&other.xz, epsilon)
-            && self.yz.approximately(&other.yz, epsilon)
+    fn approximately(&self, other: Self, epsilon: Float) -> bool {
+        self.xy.approximately(other.xy, epsilon)
+            && self.xz.approximately(other.xz, epsilon)
+            && self.yz.approximately(other.yz, epsilon)
     }
 }
