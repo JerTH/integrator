@@ -5,7 +5,7 @@
 use std::ops::Mul;
 use serde::{Serialize, Deserialize};
 use crate::bivec::Bivector;
-use crate::{Approximately, Float, Vector};
+use crate::{Approximately, Float, Vector, EPSILON};
 
 // Notes:
 // the "wild rotations" you mention has a very simple solution employed by every engine I've worked
@@ -13,11 +13,17 @@ use crate::{Approximately, Float, Vector};
 // on one half of the Lie-manifold which ensures the arc taken is as short as possible.
 
 #[derive(Serialize, Deserialize)]
-#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 #[repr(C)]
 pub struct Rotor {
     pub b: Bivector,
     pub s: Float,
+}
+
+impl Default for Rotor {
+    fn default() -> Self {
+        Self::identity()
+    }
 }
 
 impl Rotor {
@@ -29,6 +35,10 @@ impl Rotor {
         }
     }
     
+    pub fn identity() -> Self {
+        Self::new(Bivector::default(), 1.0)
+    }
+
     /// Rotate a [Vector] by the rotation represented by this [Rotor]
     /// 
     /// ```
@@ -66,16 +76,20 @@ impl Rotor {
         rotated.rotate(other);
         rotated
     }
-
+    
     /// Returns a new `Rotor` that rotates one unit vector to another unit vector
     #[inline]
     pub fn from_rotation_between_vectors(from: Vector, to: Vector) -> Self {
         let to = to.normalized();
         let from = from.normalized();
-        Rotor {
-            b: Bivector::from_wedge(to, from),
-            s: 1.0 + Vector::dot(&to, &from),
-        }.normalized()
+
+        let (b, s) = if from == -to {
+            (Bivector::from_axis_vector(from.orthogonal().normalized()), 0.0)
+        } else {
+            (Bivector::from_wedge(to, from), 1.0 + Vector::dot(&to, &from))
+        };
+
+        Rotor::new(b, s).normalized()
     }
     
     /// Returns a new `Rotor` from an angle and a plane, the plane must be normalized
@@ -117,6 +131,7 @@ impl Rotor {
     #[inline]
     pub fn normalize(&mut self) {
         let magnitude = self.magnitude();
+        dbg!(magnitude);
         self.s /= magnitude;
         self.b.xy /= magnitude;
         self.b.xz /= magnitude;
@@ -216,7 +231,7 @@ mod rotor_tests {
     #[test]
     fn identity_rotation() {
         let mut v = test_vector();
-        let identity = Rotor::new(Bivector::default(), 1.0);
+        let identity = Rotor::identity();
         identity.rotate_vector(&mut v);
         assert!(v.approximately(test_vector(), EPSILON));
     }
@@ -301,7 +316,7 @@ mod rotor_tests {
         rotor.rotate_vector(&mut rotated);
         assert!(rotated.approximately(to, EPSILON));
     }
-
+    
     #[test]
     fn rotor_magnitude_properties() {
         let rotor = Rotor::from_angle_and_plane(PI/3.0, Bivector::unit_xz());
@@ -310,7 +325,7 @@ mod rotor_tests {
 
     #[test]
     fn rotor_product_identity() {
-        let id = Rotor::default();
+        let id = Rotor::identity();
         let rotor = Rotor::from_angle_and_plane(PI/4.0, Bivector::unit_xy());
         assert!((rotor * id).approximately(rotor, EPSILON));
         assert!((id * rotor).approximately(rotor, EPSILON));

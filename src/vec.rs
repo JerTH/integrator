@@ -75,14 +75,18 @@ impl Vector {
     pub fn backward() -> Self {
         -Self::unit_z()
     }
-
-    #[inline(always)]
-    pub fn w(&self) -> Float {
-        1.0
+    
+    /// Constructs a new unit [Vector] with a direction orthogonal to this vector
+    pub fn orthogonal(&self) -> Self {
+        let axis = match (self.x.abs(), self.y.abs(), self.z.abs()) {
+            (x, y, z) if x < y && x < z => X_AXIS,
+            (x, y, z) if y < x && y < z => Y_AXIS,
+            (_, _, _) => Z_AXIS 
+        };
+        self.cross(&axis)
     }
 
     /// Calculate the dot product of this and `rhs`
-    /// X = V.V_1
     pub fn dot(&self, rhs: &Self) -> Float {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
@@ -99,12 +103,13 @@ impl Vector {
         }
     }
 
+    /// Calculate the wedge product of this and `rhs`
     #[inline]
-    pub fn wedge<V>(self, v: V) -> Bivector
+    pub fn wedge<V>(self, rhs: V) -> Bivector
     where
         V: Into<Vector>,
     {
-        let v: Vector = v.into();
+        let v: Vector = rhs.into();
         Bivector {
             xy: self.x * v.y - self.y * v.x,
             xz: self.x * v.z - self.z * v.x,
@@ -235,7 +240,7 @@ impl Vector {
             z: self.z,
         }
     }
-    
+
     /// Returns a new [Vector] with its X and Y components rotated 90 degrees clockwise about the Z axis
     /// ```
     /// use integrator::vec::Vector;

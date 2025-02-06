@@ -17,7 +17,7 @@ pub struct Matrix {
     elements: [[Float; MATRIX_4X4]; MATRIX_4X4],
 }
 
-// rustfmt::skip in this case to retain some deliberate alignment for more clarity
+// rustfmt::skip to retain some deliberate alignment for more clarity
 #[rustfmt::skip]
 impl Matrix {
     /// Construct a new [Matrix] from raw elements
