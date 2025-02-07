@@ -1,6 +1,8 @@
 /// A math library
 #[cfg(all(feature = "low_precision", feature = "high_precision"))]
-compile_error!("feature \"low_precision\" and feature \"high_precision\" cannot be enabled at the same time");
+compile_error!(
+    "feature \"low_precision\" and feature \"high_precision\" cannot be enabled at the same time"
+);
 
 #[cfg(feature = "low_precision")]
 mod types {
@@ -20,32 +22,25 @@ pub type Float = types::FType;
 pub type Int = types::IType;
 pub type Unsigned = types::UType;
 
-pub mod constant;
-pub mod vec;
-pub mod matrix;
-pub mod point;
+pub mod traits;
 pub mod bivec;
-pub mod rotor;
-pub mod plane;
+pub mod constant;
 pub mod line;
+pub mod matrix;
 pub mod percent;
+pub mod plane;
+pub mod point;
+pub mod rotor;
+pub mod vec;
 
 pub use constant::*;
-pub use vec::Vector;
-pub use point::Point;
 pub use matrix::Matrix;
+pub use point::Point;
 pub use rotor::Rotor;
+pub use vec::Vector;
 
 trait Zero {
     fn zero() -> Self;
-}
-
-trait One {
-    fn one() -> Self;
-}
-
-pub trait Approximately {
-    fn approximately(&self, other: Self, epsilon: Float) -> bool;
 }
 
 impl Zero for Float {
@@ -54,64 +49,45 @@ impl Zero for Float {
     }
 }
 
+trait One {
+    fn one() -> Self;
+}
+
 impl One for Float {
     fn one() -> Self {
         Float::from(1.0)
     }
 }
 
-impl Approximately for &Float {
-    fn approximately(&self, other: Self, epsilon: Float) -> bool {
-        if *self == other { return true; }
-
-        #[cfg(not(feature = "float_ulp_comparisons"))] {
-            return r_approx_eq(**self, *other, epsilon);
-        }
-        
-        #[cfg(feature = "float_ulp_comparisons")] {
-            unimplemented!();
-        }
-    }
+pub trait Approximately {
+    fn approximately(&self, other: Self, epsilon: Float) -> bool;
 }
 
 impl Approximately for Float {
-    fn approximately(&self, other: Self, epsilon: Float) -> bool {
-        #[cfg(not(feature = "float_ulp_comparisons"))] {
-            return r_approx_eq(*self, other, epsilon);
+    fn approximately(&self, other: Self, epsilon: f64) -> bool {
+        // If either value is NaN, then they can not be equal
+        if self.is_nan() || other.is_nan() {
+            return false;
         }
-        
-        #[cfg(feature = "float_ulp_comparisons")] {
-            unimplemented!();
+        // If the two numbers are exactly equal (including infinities), they are approximately equal.
+        if self == &other {
+            return true;
         }
+        // Compare the absolute difference to epsilon.
+        (self - other).abs() <= epsilon
     }
 }
 
-#[inline(always)]
-pub fn r_approx_eq(a: f64, b: f64, epsilon: f64) -> bool {
-    let epsilon_abs = epsilon * 0.5;
-    let epsilon_rel = epsilon;
-
-    // Handle NaN cases: NaNs are never equal
-    if a.is_nan() || b.is_nan() {
-        return false;
+impl Approximately for &Float {
+    fn approximately(&self, other: Self, epsilon: Float) -> bool {
+        Float::approximately(*self, *other, epsilon)
     }
+}
 
-    // Check for exact equality first (includes infinities and zeros)
-    if a == b {
-        return true;
+impl Approximately for &mut Float {
+    fn approximately(&self, other: Self, epsilon: Float) -> bool {
+        Float::approximately(*self, *other, epsilon)
     }
-
-    // If one is infinity and the other isn't, they're not equal
-    if a.is_infinite() || b.is_infinite() {
-        return false;
-    }
-
-    // Calculate absolute difference and maximum magnitude
-    let diff = (a - b).abs();
-    let max_abs = a.abs().max(b.abs());
-
-    // Combined absolute and relative tolerance check
-    diff <= epsilon_abs + epsilon_rel * max_abs
 }
 
 #[cfg(test)]
@@ -199,10 +175,7 @@ mod equality_tests {
         let a = 1.0;
         let b = 1.000_000_1;
         let eps = 0.000_000_2;
-        assert_eq!(
-            a.approximately(b, eps),
-            b.approximately(a, eps)
-        );
+        assert_eq!(a.approximately(b, eps), b.approximately(a, eps));
     }
 
     #[test]

@@ -3,6 +3,7 @@ use std::ops::Deref;
 use serde::{Serialize, Deserialize};
 
 use crate::line::Line;
+use crate::traits::Parallel;
 use crate::{Approximately, Float, EPSILON};
 use crate::{ Vector, Point };
 
@@ -49,14 +50,9 @@ impl Plane {
     pub fn point_on_positive_half(&self, point: Point) -> bool {
         self.distance_to(point).signum() > 0.0
     }
-
-    /// Test whether the plane is parallel with another plane
-    pub fn is_parallel(&self, other: &Plane) -> bool {
-        self.norm.cross(&other.norm).length_sq().approximately(0.0, EPSILON)
-    }
     
     /// Test whether the plane is perpendicular to another plane
-    pub fn is_perpendicular(&self, other: &Plane) -> bool {
+    pub fn perpendicular_to(&self, other: &Plane) -> bool {
         self.norm.dot(&other.norm).abs().approximately(0.0, EPSILON)
     }
 
@@ -72,7 +68,7 @@ impl Plane {
     }
     
     pub fn line_of_intersection(&self, other: &Plane) -> Option<Line> {
-        if self.is_parallel(other) {
+        if self.parallel(other) {
             return None;
         }
 
@@ -115,6 +111,31 @@ impl<P> From<(P, P, P)> for Plane where P: Deref<Target = Point> {
     }
 }
 
+impl Parallel<&Plane> for &Plane {
+    fn parallel(self, other: &Plane) -> bool {
+        self.norm.cross(&other.norm).length_sq().approximately(0.0, EPSILON)
+
+    }
+}
+
+impl Parallel<Plane> for &Plane {
+    fn parallel(self, other: Plane) -> bool {
+        self.parallel(&other)
+    }
+}
+
+impl Parallel<&Plane> for Plane {
+    fn parallel(self, other: &Plane) -> bool {
+        (&self).parallel(other)
+    }
+}
+
+impl Parallel for Plane {
+    fn parallel(self, other: Self) -> bool {
+        (&self).parallel(&other)
+    }
+}
+
 #[cfg(test)]
 mod plane_tests {
     use crate::vec::{X_AXIS, Y_AXIS, Z_AXIS};
@@ -138,7 +159,7 @@ mod plane_tests {
         assert!(approx_eq(plane_xz.distance_to(intersect.origin), 0.0),
             "Intersection point is not on PLANE_XZ.");
 
-        assert!(&intersect.direction.parallel_to(&expected),
+        assert!(&intersect.direction.parallel(&expected),
             "Intersection direction is not parallel to the x-axis.");
     }
 
@@ -156,7 +177,7 @@ mod plane_tests {
         assert!(approx_eq(plane_rotated.distance_to(intersect.origin), 0.0),
             "Intersection point is not on the rotated plane.");
 
-        assert!(&intersect.direction.parallel_to(&expected),
+        assert!(&intersect.direction.parallel(&expected),
             "Intersection direction is not parallel to the y-axis.");
     }
 
@@ -188,7 +209,7 @@ mod plane_tests {
             "Intersection point pt2 is not on PLANE_XY.");
 
         // The directions returned should be parallel (or anti‐parallel) even if one plane was inverted.
-        assert!(&intersect.direction.parallel_to(&intersect_inverted.direction),
+        assert!(&intersect.direction.parallel(&intersect_inverted.direction),
             "Intersection directions differ between the original and inverted plane cases.");
     }
 }

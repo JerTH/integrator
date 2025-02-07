@@ -2,7 +2,7 @@
 //! Vectors in 3D space
 //!
 
-use crate::{bivec::Bivector, matrix::Matrix, rotor::Rotor, Approximately, Float, EPSILON};
+use crate::{bivec::Bivector, matrix::Matrix, rotor::Rotor, traits::Parallel, Approximately, Float, EPSILON};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
@@ -75,7 +75,7 @@ impl Vector {
     pub fn backward() -> Self {
         -Self::unit_z()
     }
-    
+
     /// Constructs a new unit [Vector] with a direction orthogonal to this vector
     pub fn orthogonal(&self) -> Self {
         let axis = match (self.x.abs(), self.y.abs(), self.z.abs()) {
@@ -90,7 +90,7 @@ impl Vector {
     pub fn dot(&self, rhs: &Self) -> Float {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
-
+    
     /// Compute the cross product of this and `rhs`
     pub fn cross<V>(&self, rhs: V) -> Self
     where
@@ -149,11 +149,7 @@ impl Vector {
     pub fn distance_to(&self, other: &Self) -> Float {
         (other - self).length()
     }
-
-    pub fn parallel_to(&self, other: &Self) -> bool {
-        1.0.approximately(self.normalized().dot(&other.normalized()).abs(), EPSILON)
-    }
-
+    
     /// Calculates the resulting [Vector] from the linear interpolation
     /// of `a` to `b`, by the amount of `weight`
     /// # Examples
@@ -273,14 +269,6 @@ impl Vector {
     }
 }
 
-impl Approximately for Vector {
-    fn approximately(&self, other: Self, epsilon: Float) -> bool {
-        self.x.approximately(other.x, epsilon)
-            && self.y.approximately(other.y, epsilon)
-            && self.z.approximately(other.z, epsilon)
-    }
-}
-
 impl From<Float> for Vector {
     fn from(value: Float) -> Self {
         Vector {
@@ -294,6 +282,39 @@ impl From<Float> for Vector {
 impl From<(Float, Float, Float)> for Vector {
     fn from(value: (Float, Float, Float)) -> Self {
         Self::new(value.0, value.1, value.2)
+    }
+}
+
+impl Approximately for Vector {
+    fn approximately(&self, other: Self, epsilon: Float) -> bool {
+        self.x.approximately(other.x, epsilon)
+            && self.y.approximately(other.y, epsilon)
+            && self.z.approximately(other.z, epsilon)
+    }
+}
+
+impl Parallel<&Vector> for &Vector {
+    fn parallel(self, other: &Vector) -> bool {
+        1.0.approximately(self.normalized().dot(&other.normalized()).abs(), EPSILON)
+
+    }
+}
+
+impl Parallel<Vector> for &Vector {
+    fn parallel(self, other: Vector) -> bool {
+        self.parallel(&other)
+    }
+}
+
+impl Parallel<&Vector> for Vector {
+    fn parallel(self, other: &Vector) -> bool {
+        (&self).parallel(other)
+    }
+}
+
+impl Parallel for Vector {
+    fn parallel(self, other: Self) -> bool {
+        (&self).parallel(&other)
     }
 }
 
@@ -317,6 +338,7 @@ vector_mul!(&Vector, Float);
 vector_mul!(Vector, &Float);
 vector_mul!(&Vector, &Float);
 vector_mul!(&mut Vector, Float);
+vector_mul!(&mut Vector, &Float);
 
 macro_rules! vector_mul_reversed {
     ($lhs:ty, $rhs:ty) => {
@@ -338,6 +360,7 @@ vector_mul_reversed!(&Float, Vector);
 vector_mul_reversed!(Float, &Vector);
 vector_mul_reversed!(&Float, &Vector);
 vector_mul_reversed!(Float, &mut Vector);
+vector_mul_reversed!(&Float, &mut Vector);
 
 macro_rules! vector_componentwise_binop {
     ($lhs:ty, $rhs:ty, $func:ident, $trait:ident) => {
@@ -358,21 +381,33 @@ vector_componentwise_binop!(Vector, Vector, mul, Mul);
 vector_componentwise_binop!(&Vector, Vector, mul, Mul);
 vector_componentwise_binop!(Vector, &Vector, mul, Mul);
 vector_componentwise_binop!(&Vector, &Vector, mul, Mul);
+vector_componentwise_binop!(&mut Vector, Vector, mul, Mul);
+vector_componentwise_binop!(Vector, &mut Vector, mul, Mul);
+vector_componentwise_binop!(&mut Vector, &mut Vector, mul, Mul);
 
 vector_componentwise_binop!(Vector, Vector, div, Div);
 vector_componentwise_binop!(&Vector, Vector, div, Div);
 vector_componentwise_binop!(Vector, &Vector, div, Div);
 vector_componentwise_binop!(&Vector, &Vector, div, Div);
+vector_componentwise_binop!(&mut Vector, Vector, div, Div);
+vector_componentwise_binop!(Vector, &mut Vector, div, Div);
+vector_componentwise_binop!(&mut Vector, &mut Vector, div, Div);
 
 vector_componentwise_binop!(Vector, Vector, sub, Sub);
 vector_componentwise_binop!(&Vector, Vector, sub, Sub);
 vector_componentwise_binop!(Vector, &Vector, sub, Sub);
 vector_componentwise_binop!(&Vector, &Vector, sub, Sub);
+vector_componentwise_binop!(&mut Vector, Vector, sub, Sub);
+vector_componentwise_binop!(Vector, &mut Vector, sub, Sub);
+vector_componentwise_binop!(&mut Vector, &mut Vector, sub, Sub);
 
 vector_componentwise_binop!(Vector, Vector, add, Add);
 vector_componentwise_binop!(&Vector, Vector, add, Add);
 vector_componentwise_binop!(Vector, &Vector, add, Add);
 vector_componentwise_binop!(&Vector, &Vector, add, Add);
+vector_componentwise_binop!(&mut Vector, Vector, add, Add);
+vector_componentwise_binop!(Vector, &mut Vector, add, Add);
+vector_componentwise_binop!(&mut Vector, &mut Vector, add, Add);
 
 macro_rules! vector_div {
     ($lhs:ty, $rhs:ty) => {
@@ -393,68 +428,69 @@ vector_div!(Vector, Float);
 vector_div!(&Vector, Float);
 vector_div!(Vector, &Float);
 vector_div!(&Vector, &Float);
+vector_div!(&mut Vector, Float);
 
-impl AddAssign<&Self> for Vector {
-    fn add_assign(&mut self, rhs: &Self) {
-        self.x = self.x + rhs.x;
-        self.y = self.y + rhs.y;
-        self.z = self.z + rhs.z;
-    }
+macro_rules! vector_assignment_op {
+    ($lhs:ty, $rhs:ty, $func:ident, $trait:ident) => {
+        impl $trait<$rhs> for $lhs {
+            fn $func(&mut self, other: $rhs) {
+                Float::$func(&mut self.x, other.x);
+                Float::$func(&mut self.y, other.y);
+                Float::$func(&mut self.z, other.z);
+            }
+        }
+    };
 }
 
-impl AddAssign for Vector {
-    fn add_assign(&mut self, rhs: Self) {
-        self.add_assign(&rhs)
-    }
+macro_rules! vector_scalar_assignment_op {
+    ($lhs:ty, $rhs:ty, $func:ident, $trait:ident) => {
+        impl $trait<$rhs> for $lhs {
+            fn $func(&mut self, other: $rhs) {
+                Float::$func(&mut self.x, other as Float);
+                Float::$func(&mut self.y, other as Float);
+                Float::$func(&mut self.z, other as Float);
+            }
+        }
+    };
 }
 
-impl SubAssign<&Self> for Vector {
-    fn sub_assign(&mut self, rhs: &Self) {
-        self.x = self.x - rhs.x;
-        self.y = self.y - rhs.y;
-        self.z = self.z - rhs.z;
-    }
-}
+vector_assignment_op!(Vector, Vector, add_assign, AddAssign);
+vector_assignment_op!(Vector, &Vector, add_assign, AddAssign);
+vector_assignment_op!(Vector, &mut Vector, add_assign, AddAssign);
+vector_assignment_op!(&mut Vector, Vector, add_assign, AddAssign);
+vector_assignment_op!(&mut Vector, &Vector, add_assign, AddAssign);
+vector_assignment_op!(&mut Vector, &mut Vector, add_assign, AddAssign);
 
-impl SubAssign for Vector {
-    fn sub_assign(&mut self, rhs: Self) {
-        self.sub_assign(&rhs)
-    }
-}
+vector_assignment_op!(Vector, Vector, sub_assign, SubAssign);
+vector_assignment_op!(Vector, &Vector, sub_assign, SubAssign);
+vector_assignment_op!(Vector, &mut Vector, sub_assign, SubAssign);
+vector_assignment_op!(&mut Vector, Vector, sub_assign, SubAssign);
+vector_assignment_op!(&mut Vector, &Vector, sub_assign, SubAssign);
+vector_assignment_op!(&mut Vector, &mut Vector, sub_assign, SubAssign);
 
-impl MulAssign<&Self> for Vector {
-    fn mul_assign(&mut self, rhs: &Self) {
-        self.x = self.x * rhs.x;
-        self.y = self.y * rhs.y;
-        self.z = self.z * rhs.z;
-    }
-}
+vector_assignment_op!(Vector, Vector, mul_assign, MulAssign);
+vector_assignment_op!(Vector, &Vector, mul_assign, MulAssign);
+vector_assignment_op!(Vector, &mut Vector, mul_assign, MulAssign);
+vector_assignment_op!(&mut Vector, Vector, mul_assign, MulAssign);
+vector_assignment_op!(&mut Vector, &Vector, mul_assign, MulAssign);
+vector_assignment_op!(&mut Vector, &mut Vector, mul_assign, MulAssign);
 
-impl MulAssign for Vector {
-    fn mul_assign(&mut self, rhs: Self) {
-        self.mul_assign(&rhs)
-    }
-}
+vector_scalar_assignment_op!(Vector, f64, mul_assign, MulAssign);
+vector_scalar_assignment_op!(Vector, f32, mul_assign, MulAssign);
+vector_scalar_assignment_op!(Vector, i32, mul_assign, MulAssign);
+vector_scalar_assignment_op!(Vector, i64, mul_assign, MulAssign);
 
-impl MulAssign<Float> for Vector {
-    fn mul_assign(&mut self, rhs: Float) {
-        *self = *self * rhs
-    }
-}
+vector_assignment_op!(Vector, Vector, div_assign, DivAssign);
+vector_assignment_op!(Vector, &Vector, div_assign, DivAssign);
+vector_assignment_op!(Vector, &mut Vector, div_assign, DivAssign);
+vector_assignment_op!(&mut Vector, Vector, div_assign, DivAssign);
+vector_assignment_op!(&mut Vector, &Vector, div_assign, DivAssign);
+vector_assignment_op!(&mut Vector, &mut Vector, div_assign, DivAssign);
 
-impl DivAssign<&Self> for Vector {
-    fn div_assign(&mut self, rhs: &Self) {
-        self.x = self.x / rhs.x;
-        self.y = self.y / rhs.y;
-        self.z = self.z / rhs.z;
-    }
-}
-
-impl DivAssign for Vector {
-    fn div_assign(&mut self, rhs: Self) {
-        self.div_assign(&rhs)
-    }
-}
+vector_scalar_assignment_op!(Vector, f64, div_assign, DivAssign);
+vector_scalar_assignment_op!(Vector, f32, div_assign, DivAssign);
+vector_scalar_assignment_op!(Vector, i32, div_assign, DivAssign);
+vector_scalar_assignment_op!(Vector, i64, div_assign, DivAssign);
 
 impl Neg for Vector {
     type Output = Vector;

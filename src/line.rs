@@ -1,4 +1,4 @@
-use crate::{Approximately, Point, Vector, EPSILON};
+use crate::{traits::Parallel, Approximately, Point, Vector, EPSILON};
 
 use serde::{Serialize, Deserialize};
 
@@ -14,10 +14,10 @@ impl Line {
         Self { origin, direction }
     }
 
-    pub fn parallel_to(&self, other: &Self) -> bool {
-        self.direction.parallel_to(&other.direction)
+    pub fn from_endpoints(start: Point, end: Point) -> Self {
+        Self::new(start, end.as_vector())
     }
-    
+
     pub fn coincident(&self, other: &Self) -> bool {
         let ab = self.direction - self.origin.as_vector();
         let ac = other.origin.as_vector() - self.origin.as_vector();
@@ -25,5 +25,30 @@ impl Line {
         let ab_ac = ab.cross(&ac);
         let ab_ad = ab.cross(&ad);
         ab_ac.approximately(ab_ad, EPSILON)
+    }
+}
+
+impl Parallel<&Line> for &Line {
+    fn parallel(self, other: &Line) -> bool {
+        self.direction.parallel(&other.direction)
+
+    }
+}
+
+impl Parallel<Line> for &Line {
+    fn parallel(self, other: Line) -> bool {
+        self.parallel(&other)
+    }
+}
+
+impl Parallel<&Line> for Line {
+    fn parallel(self, other: &Line) -> bool {
+        (&self).parallel(other)
+    }
+}
+
+impl Parallel for Line {
+    fn parallel(self, other: Self) -> bool {
+        (&self).parallel(&other)
     }
 }
