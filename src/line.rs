@@ -1,4 +1,4 @@
-use crate::{traits::{Distance, Parallel}, Approximately, Point, Vector, EPSILON};
+use crate::{segment::LineSegment, traits::{Distance, Parallel}, Approximately, Point, Vector, EPSILON};
 
 use serde::{Serialize, Deserialize};
 
@@ -14,10 +14,6 @@ impl Line {
         Self { origin, direction }
     }
 
-    pub fn from_endpoints(start: Point, end: Point) -> Self {
-        Self::new(start, end.as_vector())
-    }
-
     pub fn coincident(&self, other: &Self) -> bool {
         let ab = self.direction - self.origin.as_vector();
         let ac = other.origin.as_vector() - self.origin.as_vector();
@@ -28,6 +24,12 @@ impl Line {
     }
 }
 
+impl From<LineSegment> for Line {
+    fn from(segment: LineSegment) -> Self {
+        Self::new(segment.start, segment.end.as_vector())
+    }
+}
+
 impl Parallel<&Line> for &Line {
     fn parallel(self, other: &Line) -> bool {
         self.direction.parallel(&other.direction)
@@ -35,33 +37,9 @@ impl Parallel<&Line> for &Line {
     }
 }
 
-impl Parallel<Line> for &Line {
-    fn parallel(self, other: Line) -> bool {
-        self.parallel(&other)
-    }
-}
-
-impl Parallel<&Line> for Line {
-    fn parallel(self, other: &Line) -> bool {
-        (&self).parallel(other)
-    }
-}
-
-impl Parallel for Line {
-    fn parallel(self, other: Self) -> bool {
-        (&self).parallel(&other)
-    }
-}
-
 impl Distance<&Point> for &Line {
+    // |BC| = |AB x v| / |v|
     fn distance_to(self, other: &Point) -> crate::Float {
-        // |BC| = |AB x v| / |v|
         (self.origin - other).cross(&self.direction).length() / self.direction.length()
-    }
-}
-
-impl Distance<&Point> for Line {
-    fn distance_to(self, other: &Point) -> crate::Float {
-        (&self).distance_to(other)
     }
 }

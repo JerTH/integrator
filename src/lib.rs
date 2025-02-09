@@ -26,6 +26,7 @@ pub mod traits;
 pub mod bivec;
 pub mod constant;
 pub mod line;
+pub mod segment;
 pub mod matrix;
 pub mod percent;
 pub mod plane;

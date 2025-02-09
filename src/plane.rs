@@ -55,17 +55,6 @@ impl Plane {
     pub fn perpendicular_to(&self, other: &Plane) -> bool {
         self.norm.dot(&other.norm).abs().approximately(0.0, EPSILON)
     }
-
-    /// Compute the intersection `t` along a ray where it hits the plane
-    pub fn ray_intersection(&self, origin: Point, direction: Vector) -> Option<Float> {
-        let denom = self.norm.dot(&direction);
-        if denom.abs().approximately(0.0, EPSILON) {
-            None // Ray is parallel to the plane
-        } else {
-            let t = (self.dist - self.norm.dot(&origin.as_vector())) / denom;
-            (t >= 0.0).then_some(t)
-        }
-    }
     
     pub fn line_of_intersection(&self, other: &Plane) -> Option<Line> {
         if self.parallel(other) {
@@ -118,29 +107,17 @@ impl Parallel<&Plane> for &Plane {
     }
 }
 
-impl Parallel<Plane> for &Plane {
-    fn parallel(self, other: Plane) -> bool {
-        self.parallel(&other)
-    }
-}
-
-impl Parallel<&Plane> for Plane {
-    fn parallel(self, other: &Plane) -> bool {
-        (&self).parallel(other)
-    }
-}
-
-impl Parallel for Plane {
-    fn parallel(self, other: Self) -> bool {
-        (&self).parallel(&other)
+impl Parallel<&Line> for &Plane {
+    fn parallel(self, other: &Line) -> bool {
+        self.norm.dot(&other.direction).abs().approximately(0.0, EPSILON)
     }
 }
 
 impl Intersects for Plane {
     type Intersection = Option<Line>;
     
-    fn interesects(&self, _other: &Self) -> bool {
-        todo!()
+    fn interesects(&self, other: &Self) -> bool {
+        !self.parallel(other)
     }
 
     fn intersection(&self, other: &Self) -> Self::Intersection {
@@ -165,6 +142,24 @@ impl Intersects for Plane {
     }
 }
 
+impl Intersects<Line> for Plane {
+    type Intersection = Option<Point>;
+
+    fn interesects(&self, other: &Line) -> bool {
+        !self.parallel(other)
+    }
+    
+    fn intersection(&self, other: &Line) -> Self::Intersection {
+        let denom = self.norm.dot(&other.direction);
+        if denom.abs().approximately(0.0, EPSILON) {
+            None // Ray is parallel to the plane
+        } else {
+            let t = (self.dist - self.norm.dot(&other.origin.as_vector())) / denom;
+            (t >= 0.0).then_some(other.origin + (other.direction.normalized() * t))
+        }
+    }
+}
+
 #[cfg(test)]
 mod plane_tests {
     use crate::vec::{X_AXIS, Y_AXIS, Z_AXIS};
@@ -180,8 +175,10 @@ mod plane_tests {
         let plane_xy = PLANE_XY;
         let plane_xz = PLANE_XZ;
         let expected = X_AXIS;
-        let intersect = plane_xy.line_of_intersection(&plane_xz).expect("Expected an intercept between XY and XZ planes");
+        let intersect = plane_xy.intersection(&plane_xz).expect("Expected an intercept between XY and XZ planes");
         
+        assert!(plane_xy.interesects(&plane_xz));
+
         // The intersection point should lie on both planes.
         assert!(approx_eq(plane_xy.distance_to(intersect.origin), 0.0),
             "Intersection point is not on PLANE_XY.");
@@ -197,8 +194,10 @@ mod plane_tests {
         let plane_xy = PLANE_XY;
         let normal_rotated = Vector::new(0.70710678, 0.0, 0.70710678);
         let plane_rotated = Plane::new(normal_rotated, 0.0);
-        let intersect = plane_xy.line_of_intersection(&plane_rotated).expect("Expected an intersect between XY and rotated plane");
+        let intersect = plane_xy.intersection(&plane_rotated).expect("Expected an intersect between XY and rotated plane");
         let expected = Y_AXIS;
+
+        assert!(plane_xy.interesects(&plane_rotated));
 
         // The intersection point must lie on both planes.
         assert!(approx_eq(plane_xy.distance_to(intersect.origin), 0.0),
@@ -215,7 +214,9 @@ mod plane_tests {
         // Create two parallel planes: the XY plane and a shifted XY plane (z = 1).
         let plane1 = Plane::new(Z_AXIS, 0.0);
         let plane2 = Plane::new(Z_AXIS, 1.0);
-        let intersect = plane1.line_of_intersection(&plane2);
+        let intersect = plane1.intersection(&plane2);
+
+        assert!(!plane1.interesects(&plane2));
         assert!(intersect.is_none(), "Expected no intersection line between parallel planes.");
     }
 
@@ -225,11 +226,12 @@ mod plane_tests {
         let plane1 = PLANE_XY;
         let mut plane2 = PLANE_XZ;
         
-        let intersect = plane1.line_of_intersection(&plane2).expect("Expected an intersection between XY and XZ planes");
+        let intersect = plane1.intersection(&plane2).expect("Expected an intersection between XY and XZ planes");
 
         plane2.invert();
-        let intersect_inverted = plane1.line_of_intersection(&plane2).expect("Expected an intersection between inverted planes");
+        let intersect_inverted = plane1.intersection(&plane2).expect("Expected an intersection between inverted planes");
 
+        assert!(plane1.interesects(&plane2));
 
         // Both intersection points must lie on plane1.
         assert!(approx_eq(plane1.distance_to(intersect.origin), 0.0),
