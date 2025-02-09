@@ -2,9 +2,10 @@ use std::ops::Deref;
 
 use serde::{Serialize, Deserialize};
 
+use crate::constant::EPSILON;
 use crate::line::Line;
 use crate::traits::{Intersects, Parallel};
-use crate::{Approximately, Float, EPSILON};
+use crate::{Approximately, Float};
 use crate::{ Vector, Point };
 
 pub const PLANE_XY: Plane = Plane { norm: Vector::new(0.0, 0.0, 1.0), dist: 0.0 };

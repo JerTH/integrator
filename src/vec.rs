@@ -2,7 +2,7 @@
 //! Vectors in 3D space
 //!
 
-use crate::{bivec::Bivector, matrix::Matrix, rotor::Rotor, traits::Parallel, Approximately, Float, EPSILON};
+use crate::{bivec::Bivector, constant::EPSILON, matrix::Matrix, rotor::Rotor, traits::{Parallel, Zero}, Approximately, Float};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
@@ -22,14 +22,6 @@ impl Vector {
     /// Create a new [Vector] from x, y, and z components
     pub const fn new(x: Float, y: Float, z: Float) -> Self {
         Self { x, y, z }
-    }
-
-    pub const fn zero() -> Self {
-        Self {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-        }
     }
 
     pub fn unit_x() -> Self {
@@ -284,6 +276,12 @@ impl Vector {
             y: self.x,
             z: self.z,
         }
+    }
+}
+
+impl Zero for Vector {
+    fn zero() -> Self {
+        Self::new(Float::zero(), Float::zero(), Float::zero())
     }
 }
 

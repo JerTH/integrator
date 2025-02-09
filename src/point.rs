@@ -6,7 +6,7 @@ use std::ops::Mul;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{Approximately, Float, Matrix, Vector};
+use crate::{Approximately, Float, Matrix, Vector, Zero};
 
 #[derive(Serialize, Deserialize, Default, Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct Point {
@@ -62,10 +62,11 @@ impl Point {
             z: Float::round(self.z / step_vector.z) * step_vector.z,
         })
     }
+}
 
-    #[inline(always)]
-    pub fn w(&self) -> Float {
-        0.0
+impl Zero for Point {
+    fn zero() -> Self {
+        Self::new(Float::zero(), Float::zero(), Float::zero())
     }
 }
 

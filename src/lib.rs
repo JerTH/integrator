@@ -23,6 +23,7 @@ pub type Int = types::IType;
 pub type Unsigned = types::UType;
 
 pub mod traits;
+pub mod fixed;
 pub mod bivec;
 pub mod constant;
 pub mod line;
@@ -35,15 +36,12 @@ pub mod rotor;
 pub mod vec;
 pub mod sphere;
 
-pub use constant::*;
 pub use matrix::Matrix;
 pub use point::Point;
 pub use rotor::Rotor;
 pub use vec::Vector;
 
-trait Zero {
-    fn zero() -> Self;
-}
+use traits::{Approximately, Zero};
 
 impl Zero for Float {
     fn zero() -> Self {
@@ -59,10 +57,6 @@ impl One for Float {
     fn one() -> Self {
         Float::from(1.0)
     }
-}
-
-pub trait Approximately {
-    fn approximately(&self, other: Self, epsilon: Float) -> bool;
 }
 
 impl Approximately for Float {

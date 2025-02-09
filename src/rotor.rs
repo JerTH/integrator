@@ -42,7 +42,7 @@ impl Rotor {
     /// Rotate a [Vector] by the rotation represented by this [Rotor]
     /// 
     /// ```
-    /// # use integrator::{ Approximately, Float, vec::Vector, rotor::Rotor, bivec::Bivector };
+    /// # use integrator::{ traits::Approximately, Float, vec::Vector, rotor::Rotor, bivec::Bivector };
     /// let mut from = Vector::new(4.0, 5.0, 3.0).normalized();
     /// let to = Vector::new(2.0, 5.0, 2.0).normalized();
     /// let rotor = Rotor::from_rotation_between_vectors(from, to);
@@ -219,7 +219,7 @@ impl Approximately for Rotor {
 mod rotor_tests {
     use super::*;
     use std::f64::consts::PI;
-    use crate::{Approximately, Vector};
+    use crate::{traits::Zero, Approximately, Vector};
 
     const EPSILON: Float = 1e-6;
 

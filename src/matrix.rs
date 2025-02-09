@@ -6,9 +6,7 @@
 
 use std::ops::{Index, IndexMut, Mul};
 
-use rotor::Rotor;
-
-use crate::*;
+use crate::{traits::{Approximately, Zero}, Float, One, Point, Rotor, Vector};
 pub const MATRIX_4X4: usize = 4usize;
 
 /// A 4x4 Matrix
@@ -485,6 +483,8 @@ impl std::fmt::Display for Matrix {
 
 #[cfg(test)]
 mod matrix_tests {
+    use crate::constant::PI;
+
     use super::*;
 
     #[test]
