@@ -69,6 +69,12 @@ impl Point {
     }
 }
 
+impl From<Vector> for Point {
+    fn from(value: Vector) -> Self {
+        Point::new(value.x, value.y, value.z)
+    }
+}
+
 impl Approximately for Point {
     fn approximately(&self, other: Self, epsilon: Float) -> bool {
         self.x.approximately(other.x, epsilon)
@@ -82,12 +88,6 @@ impl Approximately for &Point {
         self.x.approximately(other.x, epsilon)
             && self.y.approximately(other.y, epsilon)
             && self.z.approximately(other.z, epsilon)
-    }
-}
-
-impl From<Vector> for Point {
-    fn from(value: Vector) -> Self {
-        Point::new(value.x, value.y, value.z)
     }
 }
 

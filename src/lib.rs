@@ -32,6 +32,7 @@ pub mod plane;
 pub mod point;
 pub mod rotor;
 pub mod vec;
+pub mod sphere;
 
 pub use constant::*;
 pub use matrix::Matrix;

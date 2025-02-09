@@ -203,6 +203,24 @@ impl Vector {
         }
     }
 
+    /// Returns a new [Vector] with each component set to the maximum corresponding component in `self` and `other`
+    pub fn component_max(&self, other: &Self) -> Self {
+        Self {
+            x: Float::max(self.x, other.x),
+            y: Float::max(self.y, other.y),
+            z: Float::max(self.z, other.z),
+        }
+    }
+
+    /// Returns a new [Vector] with each component set to the maximum corresponding component in `self` and `other`
+    pub fn component_min(&self, other: &Self) -> Self {
+        Self {
+            x: Float::min(self.x, other.x),
+            y: Float::min(self.y, other.y),
+            z: Float::min(self.z, other.z),
+        }
+    }
+
     pub fn rotated_by(&self, rotation: &Rotor) -> Self {
         let mut rotated = *self;
         rotation.rotate_vector(&mut rotated);

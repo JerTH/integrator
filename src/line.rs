@@ -1,4 +1,4 @@
-use crate::{traits::Parallel, Approximately, Point, Vector, EPSILON};
+use crate::{traits::{Distance, Parallel}, Approximately, Point, Vector, EPSILON};
 
 use serde::{Serialize, Deserialize};
 
@@ -50,5 +50,18 @@ impl Parallel<&Line> for Line {
 impl Parallel for Line {
     fn parallel(self, other: Self) -> bool {
         (&self).parallel(&other)
+    }
+}
+
+impl Distance<&Point> for &Line {
+    fn distance_to(self, other: &Point) -> crate::Float {
+        // |BC| = |AB x v| / |v|
+        (self.origin - other).cross(&self.direction).length() / self.direction.length()
+    }
+}
+
+impl Distance<&Point> for Line {
+    fn distance_to(self, other: &Point) -> crate::Float {
+        (&self).distance_to(other)
     }
 }

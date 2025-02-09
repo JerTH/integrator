@@ -3,7 +3,7 @@ use std::ops::Deref;
 use serde::{Serialize, Deserialize};
 
 use crate::line::Line;
-use crate::traits::Parallel;
+use crate::traits::{Intersects, Parallel};
 use crate::{Approximately, Float, EPSILON};
 use crate::{ Vector, Point };
 
@@ -133,6 +133,35 @@ impl Parallel<&Plane> for Plane {
 impl Parallel for Plane {
     fn parallel(self, other: Self) -> bool {
         (&self).parallel(&other)
+    }
+}
+
+impl Intersects for Plane {
+    type Intersection = Option<Line>;
+    
+    fn interesects(&self, _other: &Self) -> bool {
+        todo!()
+    }
+
+    fn intersection(&self, other: &Self) -> Self::Intersection {
+        if self.parallel(other) {
+            return None;
+        }
+
+        let direction = self.norm.cross(&other.norm);
+
+        let (norm1, dist1) = (&self.norm, &self.dist);
+        let (norm2, dist2) = (&other.norm, &other.dist);
+        
+        let num = (dist1 * norm2.cross(&direction)) + (dist2 * norm1.cross(&direction));
+        let den = direction.dot(&direction);
+
+        if den.abs().approximately(0.0, EPSILON) {
+            return None;
+        }
+
+        let origin = (num / den).into();
+        return Some(Line { origin, direction });
     }
 }
 
