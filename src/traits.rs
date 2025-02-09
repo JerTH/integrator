@@ -1,19 +1,15 @@
-use crate::{line::Line, Float};
+use crate::Float;
 
 pub trait Coincident<Rhs = Self> {
-    fn coincident(&self, other: Rhs) -> bool;
+    fn coincident(&self, other: &Rhs) -> bool;
 }
 
 pub trait Parallel<Rhs = Self> {
-    fn parallel(self, other: Rhs) -> bool;
+    fn parallel(&self, other: &Rhs) -> bool;
 }
 
 pub trait Distance<Rhs = Self> {
-    fn distance_to(self, other: Rhs) -> Float;
-}
-
-pub trait RayIntersection {
-    fn ray_intersection(&self, ray: Line) -> Option<Float>;
+    fn distance_to(&self, other: &Rhs) -> Float;
 }
 
 pub trait Intersects<Rhs = Self> {

@@ -37,21 +37,21 @@ impl<P: Deref<Target = [Point]>> From<P> for Sphere {
     }
 }
 
-impl Distance<&Sphere> for Sphere {
-    fn distance_to(self, other: &Self) -> Float {
+impl Distance for Sphere {
+    fn distance_to(&self, other: &Self) -> Float {
         let center_distance = self.center.distance_to(&other.center);
         center_distance - self.radius - other.radius
     }
 }
 
-impl Distance<&Point> for Sphere {
-    fn distance_to(self, other: &Point) -> Float {
+impl Distance<Point> for Sphere {
+    fn distance_to(&self, other: &Point) -> Float {
         self.center.distance_to(&other) - self.radius
     }
 }
 
-impl Distance<&Line> for Sphere {
-    fn distance_to(self, other: &Line) -> Float {
+impl Distance<Line> for Sphere {
+    fn distance_to(&self, other: &Line) -> Float {
         other.distance_to(&self.center) - self.radius
     }
 }

@@ -311,28 +311,9 @@ impl Approximately for Vector {
     }
 }
 
-impl Parallel<&Vector> for &Vector {
-    fn parallel(self, other: &Vector) -> bool {
-        1.0.approximately(self.normalized().dot(&other.normalized()).abs(), EPSILON)
-
-    }
-}
-
-impl Parallel<Vector> for &Vector {
-    fn parallel(self, other: Vector) -> bool {
-        self.parallel(&other)
-    }
-}
-
-impl Parallel<&Vector> for Vector {
-    fn parallel(self, other: &Vector) -> bool {
-        (&self).parallel(other)
-    }
-}
-
 impl Parallel for Vector {
-    fn parallel(self, other: Self) -> bool {
-        (&self).parallel(&other)
+    fn parallel(&self, other: &Self) -> bool {
+        1.0.approximately(self.normalized().dot(&other.normalized()).abs(), EPSILON)
     }
 }
 

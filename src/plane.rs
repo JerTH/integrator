@@ -100,15 +100,15 @@ impl<P> From<(P, P, P)> for Plane where P: Deref<Target = Point> {
     }
 }
 
-impl Parallel<&Plane> for &Plane {
-    fn parallel(self, other: &Plane) -> bool {
+impl Parallel for Plane {
+    fn parallel(&self, other: &Plane) -> bool {
         self.norm.cross(&other.norm).length_sq().approximately(0.0, EPSILON)
 
     }
 }
 
-impl Parallel<&Line> for &Plane {
-    fn parallel(self, other: &Line) -> bool {
+impl Parallel<Line> for Plane {
+    fn parallel(&self, other: &Line) -> bool {
         self.norm.dot(&other.direction).abs().approximately(0.0, EPSILON)
     }
 }
@@ -148,7 +148,7 @@ impl Intersects<Line> for Plane {
     fn interesects(&self, other: &Line) -> bool {
         !self.parallel(other)
     }
-    
+
     fn intersection(&self, other: &Line) -> Self::Intersection {
         let denom = self.norm.dot(&other.direction);
         if denom.abs().approximately(0.0, EPSILON) {
