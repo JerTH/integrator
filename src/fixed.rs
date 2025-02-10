@@ -282,6 +282,7 @@ impl DivAssign for FullFixed {
     }
 }
 
+#[cfg(feature = "fixed_precision")]
 const fn const_round_to_decimal_point(x: Float) -> Float {
     let scaled = x * FIXED_DECIMAL as Float;
     let rounded = if scaled >= 0.0 {
@@ -304,7 +305,7 @@ mod fixedpoint_tests {
 
         debug_assert_eq!(expected, fixed_val.0)
     }
-    
+
     #[test]
     fn addition() {
         let a = Fixed::from(14.0);
