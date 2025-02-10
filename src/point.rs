@@ -17,16 +17,16 @@ pub struct Point {
 
 impl Point {
     #[inline]
-    pub const fn new(x: f64, y: f64, z: f64) -> Self {
-        Self { x, y, z }
+    pub fn new<F: Into<Float>>(x: F, y: F, z: F) -> Self {
+        Self { x: x.into(), y: y.into(), z: z.into() }
     }
 
     #[inline]
-    pub const fn origin() -> Self {
+    pub fn origin() -> Self {
         Self {
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
+            x: Float::from(0.0),
+            y: Float::from(0.0),
+            z: Float::from(0.0),
         }
     }
 
@@ -37,14 +37,14 @@ impl Point {
 
     /// Calculates the distance from this point to `rhs`
     /// X = |V_1 - V|
-    pub fn distance_to(&self, rhs: &Self) -> f64 {
+    pub fn distance_to(&self, rhs: &Self) -> Float {
         let delta = rhs.as_vector() - self.as_vector();
         delta.length()
     }
 
     /// Calculates the squared distance from this point to `rhs`
     /// Can be faster than `Point::distance_to()`
-    pub fn distance_to_sq(&self, rhs: &Self) -> f64 {
+    pub fn distance_to_sq(&self, rhs: &Self) -> Float {
         let delta = rhs.as_vector() - self.as_vector();
         delta.length_sq()
     }
@@ -229,7 +229,7 @@ impl Mul<&Matrix> for &Point {
     fn mul(self, rhs: &Matrix) -> Self::Output {
         let rhs = rhs;
         let lhs = self.as_vector();
-        let w = 1.0;
+        let w = Float::from(1.0);
         Vector {
             x: lhs.x * rhs[0][0] + lhs.y * rhs[0][1] + lhs.z * rhs[0][2] + w * rhs[0][3],
             y: lhs.x * rhs[1][0] + lhs.y * rhs[1][1] + lhs.z * rhs[1][2] + w * rhs[1][3],

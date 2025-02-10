@@ -6,7 +6,7 @@
 
 use std::ops::{Index, IndexMut, Mul};
 
-use crate::{traits::{Approximately, Zero}, Float, One, Point, Rotor, Vector};
+use crate::{traits::{Approximately, Zero, FloatExt}, Float, One, Point, Rotor, Vector};
 pub const MATRIX_4X4: usize = 4usize;
 
 /// A 4x4 Matrix
@@ -53,12 +53,14 @@ impl Matrix {
         let b = Vector::unit_y().rotated_by(&orientation);
         let c = Vector::unit_z().rotated_by(&orientation);
         
+        let zer = Float::zero();
+        let one = Float::one();
         Self {
             elements: [
-                [a.x, a.y, a.z, 0.0],
-                [b.x, b.y, b.z, 0.0],
-                [c.x, c.y, c.z, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
+                [a.x, a.y, a.z, zer],
+                [b.x, b.y, b.z, zer],
+                [c.x, c.y, c.z, zer],
+                [zer, zer, zer, one],
             ]
         }
     }
@@ -80,7 +82,7 @@ impl Matrix {
         matrix[3][0] = t.x;
         matrix[3][1] = t.y;
         matrix[3][2] = t.z;
-        matrix[3][3] = 1.0;
+        matrix[3][3] = Float::zero();
         matrix
     }
     
@@ -94,11 +96,14 @@ impl Matrix {
     #[inline]
     pub fn from_translation(translation: Vector) -> Self {
         let t = translation;
+
+        let zer = Float::zero();
+        let one = Float::one();
         Self::new(&[
-            [1.0, 0.0, 0.0, t.x],
-            [0.0, 1.0, 0.0, t.y],
-            [0.0, 0.0, 1.0, t.z],
-            [0.0, 0.0, 0.0, 1.0],
+            [one, zer, zer, t.x],
+            [zer, one, zer, t.y],
+            [zer, zer, one, t.z],
+            [zer, zer, zer, one],
         ])
     }
 
@@ -235,35 +240,39 @@ impl Matrix {
     ///     right = -left
     ///     top = -bottom
     #[rustfmt::skip]
-    pub fn orthographic(fovy: Float, aspect: Float, near: Float, far: Float) -> Self {
-        let f = far;
-        let n = near;
-        let h = 2.0 * n * Float::tan(fovy / 2.0); // Near plane height
+    pub fn orthographic<F: Into<Float>>(fovy: F, aspect: F, near: F, far: F) -> Self {
+        let (f, n, fovy, aspect) = (far.into(), near.into(), fovy.into(), aspect.into());
+        let h = Float::from(2.0) * n * Float::tan(fovy / Float::from(2.0)); // Near plane height
         let w = aspect * h; // Near plane width
-        let b = n * Float::tan(fovy / 2.0); // Near plane bottom
-        let r = (n * w / h) * Float::tan(fovy / 2.0); // Near plane right
+        let b = n * Float::tan(fovy / Float::from(2.0)); // Near plane bottom
+        let r = (n * w / h) * Float::tan(fovy / Float::from(2.0)); // Near plane right
         
+        let zer = Float::ZERO;
+        let one = Float::ONE;
         Self {
             elements: [
-                [1.0/r, 0.0,   0.0,       0.0     ],
-                [0.0,   1.0/b, 0.0,       0.0     ],
-                [0.0,   0.0,   1.0/(f-n), -n/(f-n)],
-                [0.0,   0.0,   0.0,       1.0     ],
+                [one/r, zer,   zer,       zer     ],
+                [zer,   one/b, zer,       zer     ],
+                [zer,   zer,   one/(f-n), -n/(f-n)],
+                [zer,   zer,   zer,       one     ],
             ]
         }
     }
 
     /// Construct a Vulkan perspective projection matrix
     #[rustfmt::skip]
-    pub fn perspective(near: Float, far: Float) -> Self {
-        let n = near;
-        let f = far;
+    pub fn perspective<F: Into<Float>>(near: F, far: F) -> Self {
+        let n = near.into();
+        let f = far.into();
+
+        let zer = Float::ZERO;
+        let one = Float::ONE;
         Self {
             elements: [
-                [n,   0.0, 0.0, 0.0 ],
-                [0.0, n,   0.0, 0.0 ],
-                [0.0, 0.0, f+n, -f*n],
-                [0.0, 0.0, 1.0, 0.0 ],
+                [n,   zer, zer, zer ],
+                [zer, n,   zer, zer ],
+                [zer, zer, f+n, -f*n],
+                [zer, zer, one, zer ],
             ]
         }
     }
@@ -430,7 +439,7 @@ impl Mul<&Point> for &Matrix {
         let w = rhs.x * self[3][0] + rhs.y * self[3][1] + rhs.z * self[3][2] + self[3][3];
 
         // Perform perspective divide
-        let inv_w = 1.0 / w;
+        let inv_w = Float::ONE / w;
         Point::new(x * inv_w, y * inv_w, z * inv_w)
     }
 }
@@ -483,7 +492,7 @@ impl std::fmt::Display for Matrix {
 
 #[cfg(test)]
 mod matrix_tests {
-    use crate::constant::PI;
+    use crate::constant::{precise, EPSILON};
 
     use super::*;
 
@@ -495,12 +504,12 @@ mod matrix_tests {
         let view = Matrix::look_at(eye, target, up);
         let expected = Matrix::identity();
 
-        assert!(view.approximately(expected, 1e-6));
+        assert!(view.approximately(expected, EPSILON));
     }
 
     #[test]
     fn perspective_aspect_ratio() {
-        let fovy = std::f64::consts::FRAC_PI_2 as Float;
+        let fovy = std::f64::consts::FRAC_PI_2;
         let aspect = 2.0; // 2:1 aspect ratio
         let near = 0.1;
         let far = 100.0;
@@ -510,15 +519,15 @@ mod matrix_tests {
         let m = p * o;
 
         let tan_half_fovy = (fovy / 2.0).tan();
-        let expected_x = 1.0 / (aspect * tan_half_fovy);
-        assert!(expected_x.approximately(m[0][0], 1e-6));
+        let expected_x = Float::from(1.0 / (aspect * tan_half_fovy));
+        assert!(expected_x.approximately(m[0][0], EPSILON));
     }
 
     #[test]
     fn test_finite_perspective_matrix() {
         let near = 2.0;
         let far = 10.0;
-        let fovy = PI / 2.0; // 90 degrees
+        let fovy = precise::PI / 2.0; // 90 degrees
         let aspect = 1.0;
 
         let o = Matrix::orthographic(fovy, aspect, near, far);
@@ -529,42 +538,42 @@ mod matrix_tests {
         let point_far = Point::new(0.0, 0.0, far);
         let z_ndc = (&m * &point_far).z;
 
-        assert!(z_ndc.approximately(1.0, 1e-6));
+        assert!(z_ndc.approximately(1.0, EPSILON));
 
         // Test near plane projects to 0.0
         let point_near = Point::new(0.0, 0.0, near);
         let z_ndc = (&m * &point_near).z;
 
-        assert!(z_ndc.approximately(0.0, 1e-6));
+        assert!(z_ndc.approximately(0.0, EPSILON));
 
         let tan_half_fov = (fovy / 2.0).tan();
         let expected_m00 = 1.0 / (aspect * tan_half_fov);
         let expected_m11 = 1.0 / tan_half_fov;
 
         // Check scaling factors
-        assert!(m.elements[0][0].approximately(expected_m00, 1e-6));
-        assert!(m.elements[1][1].approximately(expected_m11, 1e-6));
+        assert!(m.elements[0][0].approximately(expected_m00, EPSILON));
+        assert!(m.elements[1][1].approximately(expected_m11, EPSILON));
 
         // Check z and w rows
         let expected_m22 = -far / (near - far);
         let expected_m23 = (far * near) / (near - far);
 
-        assert!(m.elements[2][2].approximately(expected_m22, 1e-6));
-        assert!(m.elements[2][3].approximately(expected_m23, 1e-6));
-        assert!(m.elements[3][2].approximately(1.0, 1e-6));
-        assert!(m.elements[3][3].approximately(0.0, 1e-6));
+        assert!(m.elements[2][2].approximately(expected_m22, EPSILON));
+        assert!(m.elements[2][3].approximately(expected_m23, EPSILON));
+        assert!(m.elements[3][2].approximately(Float::from(1.0), EPSILON));
+        assert!(m.elements[3][3].approximately(Float::from(0.0), EPSILON));
         
         // Check other elements are zero where expected
-        assert!(m.elements[0][1].approximately(0.0, 1e-6));
-        assert!(m.elements[0][2].approximately(0.0, 1e-6));
-        assert!(m.elements[0][3].approximately(0.0, 1e-6));
-        assert!(m.elements[1][0].approximately(0.0, 1e-6));
-        assert!(m.elements[1][2].approximately(0.0, 1e-6));
-        assert!(m.elements[1][3].approximately(0.0, 1e-6));
-        assert!(m.elements[2][0].approximately(0.0, 1e-6));
-        assert!(m.elements[2][1].approximately(0.0, 1e-6));
-        assert!(m.elements[3][0].approximately(0.0, 1e-6));
-        assert!(m.elements[3][1].approximately(0.0, 1e-6));
-        assert!(m.elements[3][3].approximately(0.0, 1e-6));
+        assert!(m.elements[0][1].approximately(Float::from(0.0), EPSILON));
+        assert!(m.elements[0][2].approximately(Float::from(0.0), EPSILON));
+        assert!(m.elements[0][3].approximately(Float::from(0.0), EPSILON));
+        assert!(m.elements[1][0].approximately(Float::from(0.0), EPSILON));
+        assert!(m.elements[1][2].approximately(Float::from(0.0), EPSILON));
+        assert!(m.elements[1][3].approximately(Float::from(0.0), EPSILON));
+        assert!(m.elements[2][0].approximately(Float::from(0.0), EPSILON));
+        assert!(m.elements[2][1].approximately(Float::from(0.0), EPSILON));
+        assert!(m.elements[3][0].approximately(Float::from(0.0), EPSILON));
+        assert!(m.elements[3][1].approximately(Float::from(0.0), EPSILON));
+        assert!(m.elements[3][3].approximately(Float::from(0.0), EPSILON));
     }
 }

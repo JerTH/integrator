@@ -15,4 +15,5 @@ serde = {version = "1.0.203", features=["derive"]}
 default = ["high_precision"]
 low_precision = []
 high_precision = []
+fixed_precision = []
 float_ulp_comparisons = []

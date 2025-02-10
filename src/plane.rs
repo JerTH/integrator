@@ -4,13 +4,13 @@ use serde::{Serialize, Deserialize};
 
 use crate::constant::EPSILON;
 use crate::line::Line;
-use crate::traits::{Intersects, Parallel};
+use crate::traits::{Intersects, Parallel, FloatExt};
 use crate::{Approximately, Float};
 use crate::{ Vector, Point };
 
-pub const PLANE_XY: Plane = Plane { norm: Vector::new(0.0, 0.0, 1.0), dist: 0.0 };
-pub const PLANE_XZ: Plane = Plane { norm: Vector::new(0.0, 1.0, 0.0), dist: 0.0 };
-pub const PLANE_YZ: Plane = Plane { norm: Vector::new(1.0, 0.0, 0.0), dist: 0.0 };
+pub const PLANE_XY: Plane = Plane { norm: Vector::unit_z(), dist: Float::ZERO };
+pub const PLANE_XZ: Plane = Plane { norm: Vector::unit_y(), dist: Float::ZERO };
+pub const PLANE_YZ: Plane = Plane { norm: Vector::unit_x(), dist: Float::ZERO };
 
 #[derive(Serialize, Deserialize)]
 pub struct Plane {
@@ -32,8 +32,8 @@ impl Plane {
 
     pub fn inverted(&self) -> Self {
         Self {
-            norm: &self.norm * -1.0,
-            dist: &self.dist * -1.0,
+            norm: &self.norm * -Float::ONE,
+            dist: &self.dist * -Float::ONE,
         }
     }
 
@@ -49,7 +49,7 @@ impl Plane {
 
     /// Test whether the point is on the positive half of the plane
     pub fn point_on_positive_half(&self, point: Point) -> bool {
-        self.distance_to(point).signum() > 0.0
+        self.distance_to(point).signum() > Float::ZERO
     }
     
     /// Test whether the plane is perpendicular to another plane
@@ -156,7 +156,7 @@ impl Intersects<Line> for Plane {
             None // Ray is parallel to the plane
         } else {
             let t = (self.dist - self.norm.dot(&other.origin.as_vector())) / denom;
-            (t >= 0.0).then_some(other.origin + (other.direction.normalized() * t))
+            (t >= Float::ZERO).then_some(other.origin + (other.direction.normalized() * t))
         }
     }
 }
@@ -181,9 +181,9 @@ mod plane_tests {
         assert!(plane_xy.interesects(&plane_xz));
 
         // The intersection point should lie on both planes.
-        assert!(approx_eq(plane_xy.distance_to(intersect.origin), 0.0),
+        assert!(approx_eq(plane_xy.distance_to(intersect.origin), Float::ZERO),
             "Intersection point is not on PLANE_XY.");
-        assert!(approx_eq(plane_xz.distance_to(intersect.origin), 0.0),
+        assert!(approx_eq(plane_xz.distance_to(intersect.origin), Float::ZERO),
             "Intersection point is not on PLANE_XZ.");
 
         assert!(&intersect.direction.parallel(&expected),
@@ -194,16 +194,16 @@ mod plane_tests {
     fn test_line_intersection_xy_rotated() {
         let plane_xy = PLANE_XY;
         let normal_rotated = Vector::new(0.70710678, 0.0, 0.70710678);
-        let plane_rotated = Plane::new(normal_rotated, 0.0);
+        let plane_rotated = Plane::new(normal_rotated, Float::ZERO);
         let intersect = plane_xy.intersection(&plane_rotated).expect("Expected an intersect between XY and rotated plane");
         let expected = Y_AXIS;
 
         assert!(plane_xy.interesects(&plane_rotated));
 
         // The intersection point must lie on both planes.
-        assert!(approx_eq(plane_xy.distance_to(intersect.origin), 0.0),
+        assert!(approx_eq(plane_xy.distance_to(intersect.origin), Float::ZERO),
             "Intersection point is not on the XY plane.");
-        assert!(approx_eq(plane_rotated.distance_to(intersect.origin), 0.0),
+        assert!(approx_eq(plane_rotated.distance_to(intersect.origin), Float::ZERO),
             "Intersection point is not on the rotated plane.");
 
         assert!(&intersect.direction.parallel(&expected),
@@ -213,8 +213,8 @@ mod plane_tests {
     #[test]
     fn test_parallel_planes() {
         // Create two parallel planes: the XY plane and a shifted XY plane (z = 1).
-        let plane1 = Plane::new(Z_AXIS, 0.0);
-        let plane2 = Plane::new(Z_AXIS, 1.0);
+        let plane1 = Plane::new(Z_AXIS, Float::ZERO);
+        let plane2 = Plane::new(Z_AXIS, Float::ONE);
         let intersect = plane1.intersection(&plane2);
 
         assert!(!plane1.interesects(&plane2));
@@ -235,9 +235,9 @@ mod plane_tests {
         assert!(plane1.interesects(&plane2));
 
         // Both intersection points must lie on plane1.
-        assert!(approx_eq(plane1.distance_to(intersect.origin), 0.0),
+        assert!(approx_eq(plane1.distance_to(intersect.origin), Float::ZERO),
             "Intersection point pt1 is not on PLANE_XY.");
-        assert!(approx_eq(plane1.distance_to(intersect_inverted.origin), 0.0),
+        assert!(approx_eq(plane1.distance_to(intersect_inverted.origin), Float::ZERO),
             "Intersection point pt2 is not on PLANE_XY.");
 
         // The directions returned should be parallel (or anti‐parallel) even if one plane was inverted.

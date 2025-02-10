@@ -1,11 +1,20 @@
 use crate::Float;
 
+pub trait FloatExt {
+    const ONE: Self;
+    const ZERO: Self;
+}
+
+pub trait FromLossy<U> {
+    fn from_lossy(value: U) -> Self;
+}
+
 pub trait Zero {
     fn zero() -> Self;
 }
 
-pub trait Approximately {
-    fn approximately(&self, other: Self, epsilon: Float) -> bool;
+pub trait Approximately<Rhs = Self> {
+    fn approximately(&self, other: Rhs, epsilon: Float) -> bool;
 }
 
 pub trait Coincident<Rhs = Self> {

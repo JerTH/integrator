@@ -4,7 +4,7 @@
 
 use serde::{Serialize, Deserialize};
 
-use crate::{Approximately, Float, Vector};
+use crate::{Approximately, Float, Vector, traits::FloatExt};
 
 #[derive(Serialize, Deserialize)]
 #[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
@@ -17,45 +17,45 @@ pub struct Bivector {
 
 impl Bivector {
     #[inline]
-    pub fn new(xy: Float, xz: Float, yz: Float) -> Self {
+    pub fn new<F: Into<Float>>(xy: F, xz: F, yz: F) -> Self {
         Self {
-            xy, xz, yz,
+            xy: xy.into(), xz: xz.into(), yz: yz.into(),
         }
     }
 
     #[inline]
     pub fn zero() -> Self {
         Self {
-            xy: 0.0,
-            xz: 0.0,
-            yz: 0.0,
+            xy: Float::ZERO,
+            xz: Float::ZERO,
+            yz: Float::ZERO,
         }
     }
 
     #[inline]
     pub fn unit_xy() -> Self {
         Self {
-            xy: 1.0,
-            xz: 0.0,
-            yz: 0.0,
+            xy: Float::ONE,
+            xz: Float::ZERO,
+            yz: Float::ZERO,
         }
     }
 
     #[inline]
     pub fn unit_xz() -> Self {
         Self {
-            xy: 0.0,
-            xz: 1.0,
-            yz: 0.0,
+            xy: Float::ZERO,
+            xz: Float::ONE,
+            yz: Float::ZERO,
         }
     }
 
     #[inline]
     pub fn unit_yz() -> Self {
         Self {
-            xy: 0.0,
-            xz: 0.0,
-            yz: 1.0,
+            xy: Float::ZERO,
+            xz: Float::ZERO,
+            yz: Float::ONE,
         }
     }
     
