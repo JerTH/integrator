@@ -1,13 +1,16 @@
 //!
 //! Bivector
-//! 
+//!
 
-use serde::{Serialize, Deserialize};
+use serde::Deserialize;
+use serde::Serialize;
 
-use crate::{Approximately, Float, Vector, traits::FloatExt};
+use crate::traits::FloatExt;
+use crate::Approximately;
+use crate::Float;
+use crate::Vector;
 
-#[derive(Serialize, Deserialize)]
-#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
 #[repr(C)]
 pub struct Bivector {
     pub xy: Float,
@@ -19,7 +22,9 @@ impl Bivector {
     #[inline]
     pub fn new<F: Into<Float>>(xy: F, xz: F, yz: F) -> Self {
         Self {
-            xy: xy.into(), xz: xz.into(), yz: yz.into(),
+            xy: xy.into(),
+            xz: xz.into(),
+            yz: yz.into(),
         }
     }
 
@@ -58,14 +63,17 @@ impl Bivector {
             yz: Float::ONE,
         }
     }
-    
+
     #[inline]
     pub fn from_axis_vector(axis: Vector) -> Self {
         Self::new(axis.z, axis.y, axis.x)
     }
-    
+
     #[inline]
-    pub fn from_wedge<V>(u: V, v: V) -> Self where V: Into<Vector> {
+    pub fn from_wedge<V>(u: V, v: V) -> Self
+    where
+        V: Into<Vector>,
+    {
         let u: Vector = u.into();
         let v: Vector = v.into();
         Self {

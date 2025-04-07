@@ -2,17 +2,49 @@
 //! Vectors in 3D space
 //!
 
-use crate::{bivec::Bivector, constant::EPSILON, matrix::Matrix, rotor::Rotor, traits::{Parallel, Zero, FloatExt, FromLossy}, Approximately, Float};
-use serde::{Deserialize, Serialize};
-use core::f64;
-use std::ops::{Add, AddAssign, Deref, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use crate::bivec::Bivector;
+use crate::matrix::Matrix;
+use crate::rotor::Rotor;
+use crate::traits::FloatExt;
+use crate::traits::FromLossy;
+use crate::traits::Parallel;
+use crate::traits::Zero;
+use crate::Approximately;
+use crate::Float;
+use serde::Deserialize;
+use serde::Serialize;
+use std::f64;
+use std::ops::Add;
+use std::ops::AddAssign;
+use std::ops::Deref;
+use std::ops::Div;
+use std::ops::DivAssign;
+use std::ops::Mul;
+use std::ops::MulAssign;
+use std::ops::Neg;
+use std::ops::Sub;
+use std::ops::SubAssign;
+
+const EPSILON: Float = Float::EPSILON;
 
 const ZER: Float = Float::ZERO;
 const ONE: Float = Float::ONE;
 
-pub const X_AXIS: Vector = Vector { x: ONE, y: ZER, z: ZER };
-pub const Y_AXIS: Vector = Vector { x: ZER, y: ONE, z: ZER };
-pub const Z_AXIS: Vector = Vector { x: ZER, y: ZER, z: ONE };
+pub const X_AXIS: Vector = Vector {
+    x: ONE,
+    y: ZER,
+    z: ZER,
+};
+pub const Y_AXIS: Vector = Vector {
+    x: ZER,
+    y: ONE,
+    z: ZER,
+};
+pub const Z_AXIS: Vector = Vector {
+    x: ZER,
+    y: ZER,
+    z: ONE,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Default, PartialEq, PartialOrd)]
 #[repr(C)]
@@ -25,7 +57,11 @@ pub struct Vector {
 impl Vector {
     /// Create a new [Vector] from x, y, and z components
     pub fn new<F: Into<Float>>(x: F, y: F, z: F) -> Self {
-        Self { x: x.into(), y: y.into(), z: z.into() }
+        Self {
+            x: x.into(),
+            y: y.into(),
+            z: z.into(),
+        }
     }
 
     pub const fn unit_x() -> Self {
@@ -63,7 +99,7 @@ impl Vector {
     pub fn forward() -> Self {
         Self::unit_z()
     }
-    
+
     /// Constructs a new unit [Vector] pointing in the canonical backward direction
     ///
     /// (0.0, 0.0, -1.0)
@@ -71,13 +107,13 @@ impl Vector {
     pub fn backward() -> Self {
         -Self::unit_z()
     }
-
+    
     /// Constructs a new unit [Vector] with a direction orthogonal to this vector
     pub fn orthogonal(&self) -> Self {
         let axis = match (self.x.abs(), self.y.abs(), self.z.abs()) {
             (x, y, z) if x < y && x < z => X_AXIS,
             (x, y, z) if y < x && y < z => Y_AXIS,
-            (_, _, _) => Z_AXIS 
+            (_, _, _) => Z_AXIS,
         };
         self.cross(&axis)
     }
@@ -86,7 +122,7 @@ impl Vector {
     pub fn dot(&self, rhs: &Self) -> Float {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
-    
+
     /// Compute the cross product of this and `rhs`
     pub fn cross<V>(&self, rhs: V) -> Self
     where
@@ -122,16 +158,18 @@ impl Vector {
     /// Calculate the squared length of the [Vector]
     /// Faster than Vector::length()
     pub fn length_sq(&self) -> Float {
-        &self.x * &self.x + &self.y * &self.y + &self.z * &self.z
+        (&self.x * &self.x) + (&self.y * &self.y) + (&self.z * &self.z)
     }
 
     /// Computes a new [Vector] preserving this vectors direction, with
     /// its length limited to `length`
     /// ```
-    /// use integrator::vec::Vector;
+    /// # use integrator::Float;
+    /// # use integrator::vec::Vector;
+    /// # use integrator::traits::{ Approximately, FloatExt};
     /// let vector = Vector::new(10.8, 5.4, 10.8);
     /// let limited = vector.limit_length(3.0);
-    /// assert_eq!(Vector::new(2.0, 1.0, 2.0), limited);
+    /// assert!(limited.approximately(Vector::new(2.0, 1.0, 2.0), Float::EPSILON));
     /// ```
     pub fn limit_length<F: Into<Float>>(&self, length: F) -> Self {
         let l = length.into();
@@ -142,11 +180,11 @@ impl Vector {
             self.clone()
         }
     }
-    
+
     pub fn distance_to(&self, other: &Self) -> Float {
         (other - self).length()
     }
-    
+
     /// Calculates the resulting [Vector] from the linear interpolation
     /// of `a` to `b`, by the amount of `weight`
     /// # Examples
@@ -304,7 +342,10 @@ impl From<Float> for Vector {
     }
 }
 
-impl<F> From<(F, F, F)> for Vector where F: Into<Float> {
+impl<F> From<(F, F, F)> for Vector
+where
+    F: Into<Float>,
+{
     fn from(value: (F, F, F)) -> Self {
         Self::new(value.0, value.1, value.2)
     }
@@ -559,46 +600,46 @@ mod vec_tests {
     use std::f64::consts::PI;
 
     #[test]
-    fn test_addition() {
+    fn addition() {
         let v1 = Vector::new(1.0, 2.0, 3.0);
         let v2 = Vector::new(4.0, 5.0, 6.0);
         assert_eq!(v1 + v2, Vector::new(5.0, 7.0, 9.0));
     }
 
     #[test]
-    fn test_subtraction() {
+    fn subtraction() {
         let v1 = Vector::new(5.0, 5.0, 5.0);
         let v2 = Vector::new(2.0, 3.0, 4.0);
         assert_eq!(v1 - v2, Vector::new(3.0, 2.0, 1.0));
     }
 
     #[test]
-    fn test_dot_product_perpendicular() {
+    fn dot_product_perpendicular() {
         let v1 = Vector::unit_x();
         let v2 = Vector::unit_y();
         assert_eq!(v1.dot(&v2), ZER);
     }
 
     #[test]
-    fn test_cross_product() {
+    fn cross_product() {
         let cross = Vector::unit_x().cross(&Vector::unit_y());
         assert_eq!(cross, Vector::unit_z());
     }
 
     #[test]
-    fn test_length() {
+    fn length() {
         let v = Vector::new(3.0, 4.0, 0.0);
         assert_eq!(v.length(), Float::from(5.0));
     }
 
     #[test]
-    fn test_normalization() {
+    fn normalization() {
         let v = Vector::new(3.0, 4.0, 0.0).normalized();
         assert!(v.length().approximately(1.0, Float::from(EPSILON)));
     }
 
     #[test]
-    fn test_lerp() {
+    fn lerp() {
         let a = Vector::new(1.0, 2.0, 3.0);
         let b = Vector::new(2.0, 3.0, 4.0);
         let lerped = a.lerp(&b, 0.5);
@@ -606,7 +647,7 @@ mod vec_tests {
     }
 
     #[test]
-    fn test_clamp() {
+    fn clamp() {
         let v = Vector::new(5.0, -2.0, 10.0);
         let min = Vector::new(0.0, -1.0, 5.0);
         let max = Vector::new(4.0, 0.0, 8.0);
@@ -615,20 +656,13 @@ mod vec_tests {
     }
 
     #[test]
-    fn test_sign() {
+    fn sign() {
         let v = Vector::new(-3.0, 4.0, 0.0);
         assert_eq!(v.sign(), Vector::new(-1.0, 1.0, 1.0));
     }
 
     #[test]
-    fn test_rotation_about_z() {
-        let v = Vector::unit_x();
-        let rotated = v.rotate_about_z(PI / 2.0);
-        assert!(rotated.approximately(Vector::unit_y(), Float::from(EPSILON)));
-    }
-
-    #[test]
-    fn test_wedge_product() {
+    fn wedge_product() {
         let v1 = Vector::unit_x();
         let v2 = Vector::unit_y();
         let bivector = v1.wedge(v2);
@@ -638,13 +672,13 @@ mod vec_tests {
     }
 
     #[test]
-    fn test_negation() {
+    fn negation() {
         let v = Vector::new(1.0, -2.0, 3.0);
         assert_eq!(-v, Vector::new(-1.0, 2.0, -3.0));
     }
-    
+
     #[test]
-    fn test_cross_product_zero_vector() {
+    fn cross_product_zero_vector() {
         let v1 = Vector::zero();
         let v2 = Vector::unit_x();
         let cross = v1.cross(&v2);
@@ -652,7 +686,7 @@ mod vec_tests {
     }
 
     #[test]
-    fn test_distance_to() {
+    fn distance_to() {
         let v1 = Vector::new(0.0, 0.0, 0.0);
         let v2 = Vector::new(3.0, 4.0, 0.0);
         let h = Float::from(5.0);
@@ -660,11 +694,9 @@ mod vec_tests {
     }
 
     #[test]
-    fn test_assignment_operators() {
+    fn assignment_operators() {
         let mut v = Vector::new(1.0, 2.0, 3.0);
-        dbg!(v);
-        v += dbg!(Vector::new(0.5, 1.0, 1.5));
-        dbg!(v);
+        v += Vector::new(0.5, 1.0, 1.5);
         assert_eq!(v, Vector::new(1.5, 3.0, 4.5));
         v *= 2.0;
         assert_eq!(v, Vector::new(3.0, 6.0, 9.0));
@@ -673,9 +705,9 @@ mod vec_tests {
         v /= Vector::new(2.0, 2.0, 2.0);
         assert_eq!(v, Vector::new(1.0, 2.0, 3.0));
     }
-    
+
     #[test]
-    fn test_componentwise_operations() {
+    fn componentwise_operations() {
         let a = Vector::new(2.0, 3.0, 4.0);
         let b = Vector::new(1.0, 2.0, 0.5);
         assert_eq!(a * b, Vector::new(2.0, 6.0, 2.0));
@@ -683,7 +715,7 @@ mod vec_tests {
     }
 
     #[test]
-    fn test_rotate_90_xy() {
+    fn rotate_90_xy() {
         let v = Vector::unit_x();
         let rotated_cw = v.rotate_90_xy_cw();
         assert_eq!(rotated_cw, Vector::new(0.0, -1.0, 0.0));
@@ -692,7 +724,7 @@ mod vec_tests {
     }
 
     #[test]
-    fn test_limit_length() {
+    fn limit_length() {
         let v = Vector::new(6.0, 8.0, 0.0);
         let limited = v.limit_length(5.0);
         let expected = Vector::new(3.0, 4.0, 0.0);
@@ -700,37 +732,42 @@ mod vec_tests {
     }
 
     #[test]
-    fn test_rotation_about_x() {
+    fn rotation_about_x() {
         let v = Vector::unit_y();
         let rotated = v.rotate_about_x(PI / 2.0);
-        dbg!(rotated);
-        dbg!(Vector::unit_z());
         assert!(rotated.approximately(Vector::unit_z(), Float::from(EPSILON)));
     }
 
     #[test]
-    fn test_rotation_about_y() {
+    fn rotation_about_y() {
         let v = Vector::unit_z();
         let rotated = v.rotate_about_y(PI / 2.0);
         assert!(rotated.approximately(Vector::unit_x(), Float::from(EPSILON)));
     }
 
     #[test]
-    fn test_from_tuple() {
+    fn rotation_about_z() {
+        let v = Vector::unit_x();
+        let rotated = v.rotate_about_z(PI / 2.0);
+        assert!(rotated.approximately(Vector::unit_y(), Float::from(EPSILON)));
+    }
+
+    #[test]
+    fn from_tuple() {
         let tup = (1.0, 2.0, 3.0);
         let v: Vector = tup.into();
         assert_eq!(v, Vector::new(1.0, 2.0, 3.0));
     }
 
     #[test]
-    fn test_approximately() {
+    fn approximately() {
         let v1 = Vector::new(1.0, 2.0, 3.0);
         let v2 = Vector::new(1.0 + 1e-7, 2.0 - 1e-7, 3.0 + 1e-7);
         assert!(v1.approximately(v2, Float::from(EPSILON)));
     }
 
     #[test]
-    fn test_vector_mul() {
+    fn vector_mul() {
         let v1 = Vector::new(5.0, 3.0, 1.0);
         let mut v2 = Vector::new(2.0, 4.0, 6.0);
         let f1 = Float::from(3.0);

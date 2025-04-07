@@ -1,8 +1,24 @@
-use crate::{
-    constant::EPSILON, segment::LineSegment, traits::{Coincident, Distance, Parallel, Zero}, Approximately, Float, Point, Vector
-};
+//!
+//! Infinite lines in 3D space
+//! 
 
-use serde::{Deserialize, Serialize};
+use crate::segment::LineSegment;
+use crate::traits::Coincident;
+use crate::traits::Distance;
+use crate::traits::Parallel;
+use crate::traits::Zero;
+use crate::Approximately;
+use crate::Float;
+use crate::Point;
+use crate::Vector;
+
+#[cfg(feature = "fixed_precision")]
+use crate::traits::FloatExt;
+
+use serde::Deserialize;
+use serde::Serialize;
+
+const EPSILON: Float = Float::EPSILON;
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq, PartialOrd)]
 pub struct Line {
@@ -63,7 +79,14 @@ impl Coincident for Line {
 impl Distance<Point> for &Line {
     // |BC| = |AB x v| / |v|
     fn distance_to(&self, other: &Point) -> Float {
-        (self.origin - other).cross(&self.direction).length() / self.direction.length()
+        Float::sqrt(self.distance_to_sq(other))
+    }
+    
+    fn distance_to_sq(&self, other: &Point) -> Float {
+        (self.origin - other)
+            .cross(&self.direction)
+            .length_sq() 
+        / self.direction.length_sq()
     }
 }
 

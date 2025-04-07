@@ -4,9 +4,15 @@
 
 use std::ops::Mul;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
-use crate::{Approximately, Float, Matrix, Vector, Zero};
+use crate::matrix::Matrix;
+use crate::Approximately;
+use crate::Distance;
+use crate::Float;
+use crate::Vector;
+use crate::Zero;
 
 #[derive(Serialize, Deserialize, Default, Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct Point {
@@ -18,7 +24,11 @@ pub struct Point {
 impl Point {
     #[inline]
     pub fn new<F: Into<Float>>(x: F, y: F, z: F) -> Self {
-        Self { x: x.into(), y: y.into(), z: z.into() }
+        Self {
+            x: x.into(),
+            y: y.into(),
+            z: z.into(),
+        }
     }
 
     #[inline]
@@ -33,20 +43,6 @@ impl Point {
     #[inline(always)]
     pub fn as_vector(&self) -> Vector {
         Vector::new(self.x, self.y, self.z)
-    }
-
-    /// Calculates the distance from this point to `rhs`
-    /// X = |V_1 - V|
-    pub fn distance_to(&self, rhs: &Self) -> Float {
-        let delta = rhs.as_vector() - self.as_vector();
-        delta.length()
-    }
-
-    /// Calculates the squared distance from this point to `rhs`
-    /// Can be faster than `Point::distance_to()`
-    pub fn distance_to_sq(&self, rhs: &Self) -> Float {
-        let delta = rhs.as_vector() - self.as_vector();
-        delta.length_sq()
     }
 
     /// Returns a new [Point] with each component snapped to the nearest
@@ -89,6 +85,12 @@ impl Approximately for &Point {
         self.x.approximately(other.x, epsilon)
             && self.y.approximately(other.y, epsilon)
             && self.z.approximately(other.z, epsilon)
+    }
+}
+
+impl Distance for Point {
+    fn distance_to_sq(&self, other: &Self) -> Float {
+        (other.as_vector() - self.as_vector()).length_sq()
     }
 }
 

@@ -4,9 +4,19 @@
 //! This Matrix code takes a Vulkan-centric opinion. Graphics-related methods like perspective(...)
 //! are designed to work with the Vulkan graphics library and may not work as expected with other libraries
 
-use std::ops::{Index, IndexMut, Mul};
+use std::ops::Index;
+use std::ops::IndexMut;
+use std::ops::Mul;
 
-use crate::{traits::{Approximately, Zero, FloatExt}, Float, One, Point, Rotor, Vector};
+use crate::rotor::Rotor;
+use crate::traits::Approximately;
+use crate::traits::FloatExt;
+use crate::traits::Zero;
+use crate::Float;
+use crate::One;
+use crate::Point;
+use crate::Vector;
+
 pub const MATRIX_4X4: usize = 4usize;
 
 /// A 4x4 Matrix
@@ -19,9 +29,9 @@ pub struct Matrix {
 #[rustfmt::skip]
 impl Matrix {
     /// Construct a new [Matrix] from raw elements
-    pub fn new(elements: &[[Float; MATRIX_4X4]; MATRIX_4X4]) -> Self {
+    pub fn new<M: Into<[[Float; MATRIX_4X4]; MATRIX_4X4]>>(elements: M) -> Self {
         Self {
-            elements: *elements
+            elements: elements.into()
         }
     }
     
@@ -99,7 +109,7 @@ impl Matrix {
 
         let zer = Float::zero();
         let one = Float::one();
-        Self::new(&[
+        Self::new([
             [one, zer, zer, t.x],
             [zer, one, zer, t.y],
             [zer, zer, one, t.z],
@@ -137,8 +147,8 @@ impl Matrix {
     /// Tranpose this [Matrix] in place
     /// 
     /// ```
-    /// # use integrator::Matrix;
-    /// let mut m = Matrix::new(&[
+    /// # use integrator::matrix::Matrix;
+    /// let mut m = Matrix::from([
     ///     [0.0, 1.0, 2.0, 3.0],
     ///     [0.0, 0.0, 4.0, 5.0],
     ///     [0.0, 0.0, 0.0, 6.0],
@@ -209,7 +219,7 @@ impl Matrix {
         let edu = eye.as_vector().dot(&u);
         let edf = eye.as_vector().dot(&f);
         
-        Matrix::new(&[
+        Matrix::new([
             [s.x, u.x, -f.x, Float::zero()],
             [s.y, u.y, -f.y, Float::zero()],  
             [s.z, u.z, -f.z, Float::zero()],  
@@ -281,13 +291,13 @@ impl Matrix {
     /// 
     /// ```
     /// # use integrator::matrix::*;
-    /// let a = Matrix::new(&[
+    /// let a = Matrix::from([
     ///     [1.0, 0.0, 0.0, 1.0],
     ///     [0.0, 2.0, 2.0, 0.0],
     ///     [0.0, 3.0, 3.0, 0.0],
     ///     [4.0, 0.0, 0.0, 4.0],
     /// ]);
-    /// let b = Matrix::new(&[
+    /// let b = Matrix::from([
     ///     [1.0, 2.0, 3.0, 4.0],
     ///     [2.0, 0.0, 0.0, 0.0],
     ///     [3.0, 0.0, 0.0, 0.0],
@@ -339,6 +349,42 @@ impl From<Float> for Matrix {
                 [Float::zero(), Float::zero(), value, Float::zero()],
                 [Float::zero(), Float::zero(), Float::zero(), value],
             ]
+        }
+    }
+}
+
+impl<F> From<[[F; MATRIX_4X4]; MATRIX_4X4]> for Matrix
+where
+    F: Into<Float> + Copy,
+{
+    fn from(m: [[F; MATRIX_4X4]; MATRIX_4X4]) -> Self {
+        Self {
+            elements: [
+                [
+                    m[0][0].into(),
+                    m[0][1].into(),
+                    m[0][2].into(),
+                    m[0][3].into(),
+                ],
+                [
+                    m[1][0].into(),
+                    m[1][1].into(),
+                    m[1][2].into(),
+                    m[1][3].into(),
+                ],
+                [
+                    m[2][0].into(),
+                    m[2][1].into(),
+                    m[2][2].into(),
+                    m[2][3].into(),
+                ],
+                [
+                    m[3][0].into(),
+                    m[3][1].into(),
+                    m[3][2].into(),
+                    m[3][3].into(),
+                ],
+            ],
         }
     }
 }
@@ -492,7 +538,8 @@ impl std::fmt::Display for Matrix {
 
 #[cfg(test)]
 mod matrix_tests {
-    use crate::constant::{precise, EPSILON};
+    use crate::constant::precise;
+    const EPSILON: Float = Float::EPSILON;
 
     use super::*;
 
@@ -562,7 +609,7 @@ mod matrix_tests {
         assert!(m.elements[2][3].approximately(expected_m23, EPSILON));
         assert!(m.elements[3][2].approximately(Float::from(1.0), EPSILON));
         assert!(m.elements[3][3].approximately(Float::from(0.0), EPSILON));
-        
+
         // Check other elements are zero where expected
         assert!(m.elements[0][1].approximately(Float::from(0.0), EPSILON));
         assert!(m.elements[0][2].approximately(Float::from(0.0), EPSILON));

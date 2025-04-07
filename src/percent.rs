@@ -1,10 +1,10 @@
 use std::ops::Deref;
 
-use serde::{Serialize, Deserialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Represents a checked 0% to 100% percentage value
-#[derive(Serialize, Deserialize)]
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Percent(f64);
 
 impl Percent {

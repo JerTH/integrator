@@ -1,8 +1,13 @@
-//! 3D Spheres
+//!
+//! Spheres in 3D space
+//! 
 
 use std::ops::Deref;
 
-use crate::{line::Line, traits::Distance, Float, Point};
+use crate::line::Line;
+use crate::traits::Distance;
+use crate::Float;
+use crate::Point;
 
 pub struct Sphere {
     pub center: Point,
@@ -15,15 +20,11 @@ impl Sphere {
     }
 
     pub fn contains(&self, point: &Point) -> bool {
-        self.center.distance_to(&point) < self.radius
+        self.center.distance_to_sq(point) < (self.radius * self.radius)
     }
-
-    pub fn minimum_bounding<P: Deref<Target = [Point]>>(points: P) -> Option<Self> {
-        if points.len() < 4 {
-            return None;
-        }
-
-        todo!()
+    
+    pub fn minimum_bounding<P: Deref<Target = [Point]>>(_: P) -> Option<Self> {
+        todo!("Not yet implemented: Turns out this is non-trivial - implementations are welcome")
     }
 }
 
@@ -38,20 +39,21 @@ impl<P: Deref<Target = [Point]>> From<P> for Sphere {
 }
 
 impl Distance for Sphere {
-    fn distance_to(&self, other: &Self) -> Float {
-        let center_distance = self.center.distance_to(&other.center);
-        center_distance - self.radius - other.radius
+    fn distance_to_sq(&self, other: &Self) -> Float {
+        let center_distance_squared = self.center.distance_to_sq(&other.center);
+        center_distance_squared - (self.radius * self.radius) - (other.radius * other.radius)
     }
 }
 
 impl Distance<Point> for Sphere {
-    fn distance_to(&self, other: &Point) -> Float {
-        self.center.distance_to(&other) - self.radius
+    fn distance_to_sq(&self, other: &Point) -> Float {
+        self.center.distance_to_sq(&other) - (self.radius * self.radius)
     }
+
 }
 
 impl Distance<Line> for Sphere {
-    fn distance_to(&self, other: &Line) -> Float {
-        other.distance_to(&self.center) - self.radius
+    fn distance_to_sq(&self, other: &Line) -> Float {
+        other.distance_to_sq(&self.center) - (self.radius * self.radius)
     }
 }

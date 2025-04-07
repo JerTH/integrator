@@ -35,7 +35,6 @@ mod constants {
 
 #[cfg(not(feature = "fixed_precision"))]
 mod constants {
-    pub const EPSILON: crate::Float = super::precise::EPSILON;
     pub const PI: crate::Float = super::precise::PI;
     pub const E: crate::Float = super::precise::E;
     pub const PHI: crate::Float = super::precise::PHI;
@@ -43,9 +42,8 @@ mod constants {
     pub const RAD2DEG: crate::Float = super::precise::RAD2DEG;
 }
 
-pub use constants::EPSILON;
-pub use constants::PI;
+pub use constants::DEG2RAD;
 pub use constants::E;
 pub use constants::PHI;
-pub use constants::DEG2RAD;
+pub use constants::PI;
 pub use constants::RAD2DEG;

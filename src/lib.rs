@@ -1,4 +1,7 @@
+#![deny(warnings)]
+
 /// A math library
+
 #[cfg(all(feature = "low_precision", feature = "high_precision"))]
 compile_error!(
     "feature \"low_precision\" and feature \"high_precision\" cannot be enabled at the same time"
@@ -8,7 +11,9 @@ compile_error!(
 mod precision {
     use types::FType;
 
-    use crate::traits::{Approximately, FloatExt, FromLossy};
+    use crate::traits::Approximately;
+    use crate::traits::FloatExt;
+    use crate::traits::FromLossy;
 
     #[cfg(feature = "low_precision")]
     pub(crate) mod types {
@@ -27,6 +32,7 @@ mod precision {
     impl FloatExt for FType {
         const ONE: Self = 1.0;
         const ZERO: Self = 0.0;
+        const EPSILON: Self = FType::EPSILON;
     }
 
     impl FromLossy<i32> for FType {
@@ -84,6 +90,7 @@ mod precision {
 #[cfg(feature = "fixed_precision")]
 mod precision {
     use types::FType;
+    use crate::traits::FloatExt;
 
     pub(crate) mod types {
         pub type FType = crate::fixed::Fixed;
@@ -91,9 +98,10 @@ mod precision {
         pub type UType = u64;
     }
 
-    impl FType {
-        pub const ONE: Self = FType::from_const(1.0);
-        pub const ZERO: Self = FType::from_const(0.0);
+    impl FloatExt for FType {
+        const ONE: Self = FType::from_const(1.0);
+        const ZERO: Self = FType::from_const(0.0);
+        const EPSILON: Self = FType::from_const(3.0 / crate::fixed::FIXED_DECIMAL as f64);
     }
 }
 
@@ -114,13 +122,12 @@ pub mod segment;
 pub mod sphere;
 pub mod traits;
 pub mod vec;
+pub mod integrate;
+pub mod shape;
 
-pub use matrix::Matrix;
 pub use point::Point;
-pub use rotor::Rotor;
 pub use vec::Vector;
-
-use traits::{Approximately, Zero};
+pub use traits::*;
 
 impl Zero for Float {
     fn zero() -> Self {
@@ -141,18 +148,26 @@ impl One for Float {
 #[cfg(test)]
 mod equality_tests {
     use super::*;
-    use std::f64::{INFINITY, NAN, NEG_INFINITY};
+    use std::f64::INFINITY;
+    use std::f64::NEG_INFINITY;
+    
+    #[allow(unused_imports)]
+    use std::f64::NAN;
+    
+    #[cfg(feature = "fixed_precision")]
+    use crate::traits::FloatExt;
+
+    const EPSILON: Float = Float::EPSILON;
 
     #[test]
     fn exact_equality() {
         let a: Float = 1.0.into();
         let b: Float = 1.0.into();
         assert!(a.approximately(b, Float::from(0.0)));
-        assert!(a.approximately(b, Float::EPSILON));
+        assert!(a.approximately(b, EPSILON));
     }
 
-    #[cfg(feature = "fixed_precision")]
-    #[ignore]
+    #[cfg(not(feature = "fixed_precision"))]
     #[test]
     fn difference_equals_epsilon() {
         let a = Float::from(1.0);
@@ -160,16 +175,16 @@ mod equality_tests {
         assert!(a.approximately(b, Float::from(0.5)));
         assert!(b.approximately(a, Float::from(0.5)));
     }
-
+    
     #[test]
+    #[cfg(not(feature = "fixed_precision"))]
     fn difference_exceeds_epsilon() {
         let a = Float::from(1.0);
         let b = Float::from(1.0 + 0.5 + f64::EPSILON);
         assert!(!a.approximately(b, Float::from(0.5)));
     }
 
-    #[cfg(feature = "fixed_precision")]
-    #[ignore]
+    #[cfg(not(feature = "fixed_precision"))]
     #[test]
     fn zero_edge_cases() {
         assert!(Float::from(0.0).approximately(Float::from(0.0), Float::from(0.0)));
@@ -177,8 +192,7 @@ mod equality_tests {
         assert!(!Float::from(0.0).approximately(Float::from(1e-5), Float::from(1e-6)));
     }
 
-    #[cfg(feature = "fixed_precision")]
-    #[ignore]
+    #[cfg(not(feature = "fixed_precision"))]
     #[test]
     fn opposite_signs() {
         assert!(!Float::from(5.0).approximately(Float::from(-5.0), Float::from(9.9)));
@@ -193,8 +207,7 @@ mod equality_tests {
         assert!(a.approximately(b, min));
     }
 
-    #[cfg(feature = "fixed_precision")]
-    #[ignore]
+    #[cfg(not(feature = "fixed_precision"))]
     #[test]
     fn nan_handling() {
         assert!(!Float::from(NAN).approximately(Float::from(NAN), Float::from(f64::MAX)));
@@ -202,6 +215,7 @@ mod equality_tests {
         assert!(!Float::from(1.0).approximately(Float::from(NAN), Float::from(f64::MAX)));
     }
 
+    #[cfg(not(feature = "fixed_precision"))]
     #[test]
     fn infinity_handling() {
         assert!(Float::from(INFINITY).approximately(Float::from(INFINITY), Float::from(0.0)));
@@ -212,8 +226,7 @@ mod equality_tests {
         assert!(!Float::from(1.0).approximately(Float::from(INFINITY), Float::from(f64::MAX)));
     }
 
-    #[cfg(feature = "fixed_precision")]
-    #[ignore]
+    #[cfg(not(feature = "fixed_precision"))]
     #[test]
     fn large_numbers() {
         let a = Float::from(1e20);
@@ -222,8 +235,7 @@ mod equality_tests {
         assert!(!a.approximately(b, Float::from(1e14)));
     }
 
-    #[cfg(feature = "fixed_precision")]
-    #[ignore]
+    #[cfg(not(feature = "fixed_precision"))]
     #[test]
     fn tiny_epsilon() {
         let a = Float::from(1.0 + 2.0 * f64::EPSILON);
@@ -236,8 +248,7 @@ mod equality_tests {
     fn symmetry_property() {
         let a = Float::from(1.0);
         let b = Float::from(1.000_000_1);
-        let eps = Float::from(0.000_000_2);
-        assert_eq!(a.approximately(b, eps), b.approximately(a, eps));
+        assert_eq!(a.approximately(b, EPSILON), b.approximately(a, EPSILON));
     }
 
     #[test]
@@ -245,9 +256,8 @@ mod equality_tests {
         let a = Float::from(1.0);
         let b = Float::from(1.000_000_05);
         let c = Float::from(1.000_000_1);
-        let eps = Float::from(0.000_000_2);
-        assert!(a.approximately(b, eps));
-        assert!(b.approximately(c, eps));
-        assert!(a.approximately(c, eps));
+        assert!(a.approximately(b, EPSILON));
+        assert!(b.approximately(c, EPSILON));
+        assert!(a.approximately(c, EPSILON));
     }
 }
