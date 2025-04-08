@@ -6,16 +6,16 @@ use crate::Point;
 
 /// A Line Segment
 ///
-/// Nearly identical to a [crate::line::Line], the difference being how they are used.
+/// Nearly identical to a [Line], the difference laying how they are used.
 ///
-/// Where a [crate::line::Line] is canonically defined by an origin point and a direction
+/// Where a [Line] is canonically defined by an origin point and a direction
 /// vector where the origin is any point along the line and the line extends to infinity,
 /// a line segment is defined by start and end points and has a length. [LineSegment]'s
-/// can be converted to and from [crate::line::Line]'s seamlessly.
+/// can be converted to and from [Line]'s seamlessly.
 ///
-/// [LineSegment]'s and [crate::line::Line]'s are similar to the distinction between
-/// [crate::point::Point] and [crate::vec::Vector] where the two types are nearly
-/// functionally identical but differentiating the two is still useful
+/// [LineSegment] and [Line] are in a sense similar to the distinction between
+/// [Point] and [crate::vec::Vector] where the two types are nearly
+/// functionally identical but differentiating between them is still useful
 pub struct LineSegment {
     pub start: Point,
     pub end: Point,

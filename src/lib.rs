@@ -1,6 +1,6 @@
 #![deny(warnings)]
 
-/// A math library
+/// Integrator aims to be a useful-to-most-but-not-to-all math library that simply gets out of the way of the user and has a reasonably pleasant interface
 
 #[cfg(all(feature = "low_precision", feature = "high_precision"))]
 compile_error!(
