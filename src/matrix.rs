@@ -335,7 +335,7 @@ impl Approximately for Matrix {
                 }
             }
         }
-        return true;
+        true
     }
 }
 
@@ -452,7 +452,7 @@ impl Mul<Vector> for &Matrix {
     type Output = Vector;
 
     fn mul(self, rhs: Vector) -> Self::Output {
-        self * &rhs
+        <&Matrix as std::ops::Mul<&Vector>>::mul(self, &rhs)
     }
 }
 
@@ -460,7 +460,7 @@ impl Mul<&Vector> for Matrix {
     type Output = Vector;
 
     fn mul(self, rhs: &Vector) -> Self::Output {
-        &self * rhs
+        <&Matrix as std::ops::Mul<&Vector>>::mul(&self, rhs)
     }
 }
 
@@ -468,7 +468,7 @@ impl Mul<Vector> for Matrix {
     type Output = Vector;
 
     fn mul(self, rhs: Vector) -> Self::Output {
-        &self * &rhs
+        <&Matrix as std::ops::Mul<&Vector>>::mul(&self, &rhs)
     }
 }
 
@@ -529,10 +529,10 @@ impl IndexMut<usize> for &mut Matrix {
 impl std::fmt::Display for Matrix {
     #[rustfmt::skip]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{:+.3}, {:+.3}, {:+.3}, {:+.3}]\n", self[0][0], self[0][1], self[0][2], self[0][3])?;
-        write!(f, "[{:+.3}, {:+.3}, {:+.3}, {:+.3}]\n", self[1][0], self[1][1], self[1][2], self[1][3])?;
-        write!(f, "[{:+.3}, {:+.3}, {:+.3}, {:+.3}]\n", self[2][0], self[2][1], self[2][2], self[2][3])?;
-        write!(f, "[{:+.3}, {:+.3}, {:+.3}, {:+.3}]\n", self[3][0], self[3][1], self[3][2], self[3][3])
+        writeln!(f, "[{:+.3}, {:+.3}, {:+.3}, {:+.3}]", self[0][0], self[0][1], self[0][2], self[0][3])?;
+        writeln!(f, "[{:+.3}, {:+.3}, {:+.3}, {:+.3}]", self[1][0], self[1][1], self[1][2], self[1][3])?;
+        writeln!(f, "[{:+.3}, {:+.3}, {:+.3}, {:+.3}]", self[2][0], self[2][1], self[2][2], self[2][3])?;
+        writeln!(f, "[{:+.3}, {:+.3}, {:+.3}, {:+.3}]", self[3][0], self[3][1], self[3][2], self[3][3])
     }
 }
 

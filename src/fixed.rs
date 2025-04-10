@@ -3,18 +3,18 @@
 //! This is not designed to be a fully general purpose fixed point arithmetic system
 //! Instead, the goal is to be generally useful for 3D graphics and interactive simulations
 //! while being easy to use
-//! 
+//!
 //! Fixed point numbers are represented by signed 64 bit integers. During all basic
 //! operations they are promoted to signed 128 bit integers before the operation and then
 //! truncated back down to 64 bits.
-//! 
+//!
 //! Fixed point arithmetic is slower. The primary benefit is a consistent precision across
 //! the entire numerical range. The default setting for this implementation offers
 //! a precision of 1.0×10^-5 over ±9.223372037×10^13. This is adequate enough to uniformly
 //! represent positions of 10μm within a radius of 616AU
 
-use std::fmt::Display;
 use std::fmt::Debug;
+use std::fmt::Display;
 use std::ops::Add;
 use std::ops::AddAssign;
 use std::ops::Div;
@@ -62,7 +62,7 @@ impl Fixed {
     }
 
     pub fn powi(self, exp: i32) -> Self {
-        Self(Int::pow(self.0, exp.abs() as u32))
+        Self(Int::pow(self.0, exp.unsigned_abs()))
     }
 
     pub fn powf(self, exp: Self) -> Self {
@@ -182,7 +182,7 @@ where
 {
     fn approximately(&self, other: F, epsilon: crate::Float) -> bool {
         let e = Fixed::from(epsilon).0;
-        return i64::abs(self.0 - other.into().0) <= e;
+        i64::abs(self.0 - other.into().0) <= e
     }
 }
 
@@ -197,7 +197,10 @@ macro_rules! fixed_binop {
         impl $trait<$rhs> for $lhs {
             type Output = Fixed;
             fn $func(self, other: $rhs) -> Self::Output {
-                Fixed::from(FullFixed::$func(FullFixed::from(self), FullFixed::from(other)))
+                Fixed::from(FullFixed::$func(
+                    FullFixed::from(self),
+                    FullFixed::from(other),
+                ))
             }
         }
     };
@@ -363,7 +366,10 @@ impl Mul for FullFixed {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        Self(FullInt::div(FullInt::mul(self.0, rhs.0), FULL_FIXED_DECIMAL))
+        Self(FullInt::div(
+            FullInt::mul(self.0, rhs.0),
+            FULL_FIXED_DECIMAL,
+        ))
     }
 }
 
@@ -371,7 +377,10 @@ impl Div for FullFixed {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self::Output {
-        Self(FullInt::div(FullInt::mul(self.0, FULL_FIXED_DECIMAL), rhs.0))
+        Self(FullInt::div(
+            FullInt::mul(self.0, FULL_FIXED_DECIMAL),
+            rhs.0,
+        ))
     }
 }
 
@@ -390,13 +399,13 @@ fullfixed_assignment_op!(FullFixed, FullFixed, sub_assign, SubAssign);
 
 impl MulAssign for FullFixed {
     fn mul_assign(&mut self, rhs: Self) {
-        *self = FullFixed::from(*self * rhs)
+        *self = *self * rhs
     }
 }
 
 impl DivAssign for FullFixed {
     fn div_assign(&mut self, rhs: Self) {
-        *self = FullFixed::from(*self / rhs)
+        *self = *self / rhs
     }
 }
 

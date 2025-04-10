@@ -11,7 +11,6 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::ops::Mul;
 
-// Notes:
 // the "wild rotations" you mention has a very simple solution employed by every engine I've worked
 // with. Basically, you just constrain the real part to be positive which fixes your interpolation
 // on one half of the Lie-manifold which ensures the arc taken is as short as possible.
@@ -55,7 +54,7 @@ impl Rotor {
     pub fn rotate_vector(&self, vector: &mut Vector) {
         #[cfg(not(feature = "fixed_precision"))]
         {
-            floating::rotate_vector(&self, vector);
+            floating::rotate_vector(self, vector);
         }
         #[cfg(feature = "fixed_precision")]
         {
@@ -70,7 +69,7 @@ impl Rotor {
 
     /// Return a new [Rotor] rotated by another [Rotor]
     pub fn rotated(&self, other: &Rotor) -> Self {
-        let mut rotated = self.clone();
+        let mut rotated = *self;
         rotated.rotate(other);
         rotated
     }
@@ -102,7 +101,7 @@ impl Rotor {
         #[cfg(not(feature = "fixed_precision"))]
         {
             let angle = angle.into();
-    
+
             let sina = (angle / Float::from(2.0)).sin();
             let cosa = (angle / Float::from(2.0)).cos();
             let bv = Bivector {
@@ -114,7 +113,7 @@ impl Rotor {
         }
         #[cfg(feature = "fixed_precision")]
         {
-            return fixed::from_angle_and_plane(angle.into(), plane)
+            return fixed::from_angle_and_plane(angle.into(), plane);
         }
     }
 
@@ -123,7 +122,9 @@ impl Rotor {
     pub fn product(&self, other: &Self) -> Self {
         let p = self;
         let q = other;
-        let mut r = Self::default();
+
+        let mut r = Rotor { ..Rotor::default() };
+
         r.s = p.s * q.s - p.b.xy * q.b.xy - p.b.xz * q.b.xz - p.b.yz * q.b.yz;
         r.b.xy = p.b.xy * q.s + p.s * q.b.xy + p.b.yz * q.b.xz - p.b.xz * q.b.yz;
         r.b.xz = p.b.xz * q.s + p.s * q.b.xz - p.b.yz * q.b.xy + p.b.xy * q.b.yz;
@@ -224,7 +225,7 @@ impl std::fmt::Display for Rotor {
 
 impl Approximately for Rotor {
     fn approximately(&self, other: Self, epsilon: Float) -> bool {
-        return self.s.approximately(other.s, epsilon) && self.b.approximately(other.b, epsilon);
+        self.s.approximately(other.s, epsilon) && self.b.approximately(other.b, epsilon)
     }
 }
 
@@ -252,9 +253,9 @@ pub(crate) mod floating {
 #[allow(dead_code)]
 #[cfg(feature = "fixed_precision")]
 pub(crate) mod fixed {
+    use super::Bivector;
     use super::Rotor;
     use super::Vector;
-    use super::Bivector;
     use crate::fixed::Fixed;
     use crate::fixed::FullFixed;
     use crate::fixed::FIXED_DECIMAL;
@@ -302,11 +303,7 @@ pub(crate) mod fixed {
         vy = rots * qy - qx * rbxy - t * rbxz + qz * rbyz;
         vz = rots * qz + t * rbxy - qx * rbxz - qy * rbyz;
 
-        *vector = Vector::new(
-            FullFixed(vx.0),
-            FullFixed(vy.0),
-            FullFixed(vz.0),
-        );
+        *vector = Vector::new(FullFixed(vx.0), FullFixed(vy.0), FullFixed(vz.0));
     }
 }
 

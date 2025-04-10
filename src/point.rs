@@ -72,8 +72,8 @@ impl From<Vector> for Point {
     }
 }
 
-impl Approximately for Point {
-    fn approximately(&self, other: Self, epsilon: Float) -> bool {
+impl Approximately<&Point> for Point {
+    fn approximately(&self, other: &Point, epsilon: Float) -> bool {
         self.x.approximately(other.x, epsilon)
             && self.y.approximately(other.y, epsilon)
             && self.z.approximately(other.z, epsilon)
@@ -98,7 +98,7 @@ impl std::ops::Add<&Vector> for &Point {
     type Output = Point;
 
     fn add(self, rhs: &Vector) -> Self::Output {
-        Point::from(&self.as_vector() + rhs)
+        Point::from(self.as_vector() + rhs)
     }
 }
 
@@ -106,7 +106,7 @@ impl std::ops::Add<Vector> for Point {
     type Output = Point;
 
     fn add(self, rhs: Vector) -> Self::Output {
-        &self + &rhs
+        <&Point as std::ops::Add<&Vector>>::add(&self, &rhs)
     }
 }
 
@@ -114,7 +114,7 @@ impl std::ops::Add<&Vector> for Point {
     type Output = Point;
 
     fn add(self, rhs: &Vector) -> Self::Output {
-        &self + rhs
+        <&Point as std::ops::Add<&Vector>>::add(&self, rhs)
     }
 }
 
@@ -122,7 +122,7 @@ impl std::ops::Add<Vector> for &Point {
     type Output = Point;
 
     fn add(self, rhs: Vector) -> Self::Output {
-        self + &rhs
+        <&Point as std::ops::Add<&Vector>>::add(self, &rhs)
     }
 }
 
@@ -130,7 +130,7 @@ impl std::ops::Sub<&Vector> for &Point {
     type Output = Point;
 
     fn sub(self, rhs: &Vector) -> Self::Output {
-        Point::from(&self.as_vector() - rhs)
+        Point::from(self.as_vector() - rhs)
     }
 }
 
@@ -146,7 +146,7 @@ impl std::ops::Sub<&Vector> for Point {
     type Output = Point;
 
     fn sub(self, rhs: &Vector) -> Self::Output {
-        &self - rhs
+        <&Point as std::ops::Sub<&Vector>>::sub(&self, rhs)
     }
 }
 
@@ -154,7 +154,7 @@ impl std::ops::Sub<Vector> for &Point {
     type Output = Point;
 
     fn sub(self, rhs: Vector) -> Self::Output {
-        self - &rhs
+        <&Point as std::ops::Sub<&Vector>>::sub(self, &rhs)
     }
 }
 
@@ -229,7 +229,6 @@ impl Mul<&Matrix> for &Point {
 
     /// Multiply a [Matrix] by a [Point] (p' = Mp)
     fn mul(self, rhs: &Matrix) -> Self::Output {
-        let rhs = rhs;
         let lhs = self.as_vector();
         let w = Float::from(1.0);
         Vector {

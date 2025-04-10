@@ -13,7 +13,7 @@ use crate::Point;
 use crate::Vector;
 
 #[cfg(feature = "fixed_precision")]
-use crate::traits::FloatExt;
+use crate::traits::Numeric;
 
 use serde::Deserialize;
 use serde::Serialize;
@@ -52,7 +52,7 @@ impl Coincident for Line {
 
         if self_dir_zero && other_dir_zero {
             // Both lines are points; check if their origins are the same
-            return self.origin.approximately(other.origin, EPSILON);
+            return self.origin.approximately(&other.origin, EPSILON);
         } else if self_dir_zero || other_dir_zero {
             // One is a line and the other is a point; can't be coincident
             return false;

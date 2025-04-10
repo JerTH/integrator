@@ -1,5 +1,6 @@
 //! Various useful constants
 
+#[allow(clippy::excessive_precision)]
 pub mod precise {
     /// Default epsilon used for comparisons
     pub const EPSILON: f64 = 1e-6;

@@ -1,6 +1,6 @@
-//! 
+//!
 //! Infinite planes in 3D space
-//! 
+//!
 
 use std::ops::Deref;
 
@@ -51,8 +51,8 @@ impl Plane {
 
     pub fn inverted(&self) -> Self {
         Self {
-            norm: &self.norm * -Float::ONE,
-            dist: &self.dist * -Float::ONE,
+            norm: self.norm * -Float::ONE,
+            dist: self.dist * -Float::ONE,
         }
     }
 
@@ -94,7 +94,7 @@ impl Plane {
         }
 
         let origin = (num / den).into();
-        return Some(Line { origin, direction });
+        Some(Line { origin, direction })
     }
 
     pub fn angle_between(&self, other: &Plane) -> Float {
@@ -169,7 +169,7 @@ impl Intersects for Plane {
         }
 
         let origin = (num / den).into();
-        return Some(Line { origin, direction });
+        Some(Line { origin, direction })
     }
 }
 

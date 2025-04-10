@@ -1,12 +1,14 @@
 //!
 //! Spheres in 3D space
-//! 
+//!
 
 use std::ops::Deref;
 
+use crate::circle::Circle;
 use crate::line::Line;
 use crate::traits::Distance;
 use crate::Float;
+use crate::Intersects;
 use crate::Point;
 
 pub struct Sphere {
@@ -22,9 +24,9 @@ impl Sphere {
     pub fn contains(&self, point: &Point) -> bool {
         self.center.distance_to_sq(point) < (self.radius * self.radius)
     }
-    
+
     pub fn minimum_bounding<P: Deref<Target = [Point]>>(_: P) -> Option<Self> {
-        todo!("Not yet implemented: Turns out this is non-trivial - implementations are welcome")
+        todo!("Not yet implemented: Turns out this is quite non-trivial - implementations are welcome")
     }
 }
 
@@ -47,13 +49,24 @@ impl Distance for Sphere {
 
 impl Distance<Point> for Sphere {
     fn distance_to_sq(&self, other: &Point) -> Float {
-        self.center.distance_to_sq(&other) - (self.radius * self.radius)
+        self.center.distance_to_sq(other) - (self.radius * self.radius)
     }
-
 }
 
 impl Distance<Line> for Sphere {
     fn distance_to_sq(&self, other: &Line) -> Float {
         other.distance_to_sq(&self.center) - (self.radius * self.radius)
+    }
+}
+
+impl Intersects for Sphere {
+    type Intersection = Circle;
+
+    fn interesects(&self, other: &Self) -> bool {
+        self.distance_to_sq(other) < 0.0
+    }
+
+    fn intersection(&self, _: &Self) -> Self::Intersection {
+        todo!()
     }
 }

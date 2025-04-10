@@ -47,6 +47,18 @@ mod precision {
         }
     }
 
+    impl FromLossy<u32> for FType {
+        fn from_lossy(value: u32) -> Self {
+            value as Self
+        }
+    }
+
+    impl FromLossy<u64> for FType {
+        fn from_lossy(value: u64) -> Self {
+            value as Self
+        }
+    }
+
     impl FromLossy<f32> for FType {
         fn from_lossy(value: f32) -> Self {
             value as Self
@@ -89,8 +101,8 @@ mod precision {
 
 #[cfg(feature = "fixed_precision")]
 mod precision {
-    use types::FType;
     use crate::traits::FloatExt;
+    use types::FType;
 
     pub(crate) mod types {
         pub type FType = crate::fixed::Fixed;
@@ -110,8 +122,10 @@ pub type Int = precision::types::IType;
 pub type Unsigned = precision::types::UType;
 
 pub mod bivec;
+pub mod circle;
 pub mod constant;
 pub mod fixed;
+pub mod integrate;
 pub mod line;
 pub mod matrix;
 pub mod percent;
@@ -119,15 +133,14 @@ pub mod plane;
 pub mod point;
 pub mod rotor;
 pub mod segment;
+pub mod shape;
 pub mod sphere;
 pub mod traits;
 pub mod vec;
-pub mod integrate;
-pub mod shape;
 
 pub use point::Point;
-pub use vec::Vector;
 pub use traits::*;
+pub use vec::Vector;
 
 impl Zero for Float {
     fn zero() -> Self {
@@ -150,10 +163,10 @@ mod equality_tests {
     use super::*;
     use std::f64::INFINITY;
     use std::f64::NEG_INFINITY;
-    
+
     #[allow(unused_imports)]
     use std::f64::NAN;
-    
+
     #[cfg(feature = "fixed_precision")]
     use crate::traits::FloatExt;
 
@@ -175,7 +188,7 @@ mod equality_tests {
         assert!(a.approximately(b, Float::from(0.5)));
         assert!(b.approximately(a, Float::from(0.5)));
     }
-    
+
     #[test]
     #[cfg(not(feature = "fixed_precision"))]
     fn difference_exceeds_epsilon() {

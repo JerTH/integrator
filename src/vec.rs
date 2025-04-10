@@ -11,6 +11,7 @@ use crate::traits::Parallel;
 use crate::traits::Zero;
 use crate::Approximately;
 use crate::Float;
+use crate::Numeric;
 use serde::Deserialize;
 use serde::Serialize;
 use std::f64;
@@ -107,7 +108,7 @@ impl Vector {
     pub fn backward() -> Self {
         -Self::unit_z()
     }
-    
+
     /// Constructs a new unit [Vector] with a direction orthogonal to this vector
     pub fn orthogonal(&self) -> Self {
         let axis = match (self.x.abs(), self.y.abs(), self.z.abs()) {
@@ -158,7 +159,7 @@ impl Vector {
     /// Calculate the squared length of the [Vector]
     /// Faster than Vector::length()
     pub fn length_sq(&self) -> Float {
-        (&self.x * &self.x) + (&self.y * &self.y) + (&self.z * &self.z)
+        (self.x * self.x) + (self.y * self.y) + (self.z * self.z)
     }
 
     /// Computes a new [Vector] preserving this vectors direction, with
@@ -177,7 +178,7 @@ impl Vector {
             let normalized = self.normalized();
             normalized * l
         } else {
-            self.clone()
+            *self
         }
     }
 
@@ -332,9 +333,13 @@ impl Zero for Vector {
     }
 }
 
-impl From<Float> for Vector {
-    fn from(value: Float) -> Self {
-        Vector {
+impl<E> From<E> for Vector
+where
+    E: Numeric,
+{
+    fn from(value: E) -> Self {
+        let value = <E as Numeric>::into_float(value);
+        Self {
             x: value,
             y: value,
             z: value,
@@ -342,12 +347,16 @@ impl From<Float> for Vector {
     }
 }
 
-impl<F> From<(F, F, F)> for Vector
+impl<E> From<(E, E, E)> for Vector
 where
-    F: Into<Float>,
+    E: Numeric,
 {
-    fn from(value: (F, F, F)) -> Self {
-        Self::new(value.0, value.1, value.2)
+    fn from(value: (E, E, E)) -> Self {
+        Self::new(
+            value.0.into_float(),
+            value.1.into_float(),
+            value.2.into_float(),
+        )
     }
 }
 
@@ -574,7 +583,7 @@ impl Mul<&Matrix> for Vector {
     type Output = Vector;
 
     fn mul(self, rhs: &Matrix) -> Self::Output {
-        &self * rhs
+        <&Vector as std::ops::Mul<&Matrix>>::mul(&self, rhs)
     }
 }
 
@@ -582,7 +591,7 @@ impl Mul<Matrix> for &Vector {
     type Output = Vector;
 
     fn mul(self, rhs: Matrix) -> Self::Output {
-        self * &rhs
+        <&Vector as std::ops::Mul<&Matrix>>::mul(self, &rhs)
     }
 }
 
@@ -590,7 +599,7 @@ impl Mul<Matrix> for Vector {
     type Output = Vector;
 
     fn mul(self, rhs: Matrix) -> Self::Output {
-        &self * &rhs
+        <&Vector as std::ops::Mul<&Matrix>>::mul(&self, &rhs)
     }
 }
 
