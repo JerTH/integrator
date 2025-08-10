@@ -35,41 +35,40 @@ mod precision {
         const EPSILON: Self = FType::EPSILON;
     }
 
-    impl FromLossy<i32> for FType {
-        fn from_lossy(value: i32) -> Self {
-            value as Self
-        }
+    macro_rules! from_lossy_impl {
+        ($A:ty, $B:ty) => {
+            impl FromLossy<$A> for $B {
+                fn from_lossy(value: $A) -> Self {
+                    value as $B
+                }
+            }
+        };
     }
 
-    impl FromLossy<i64> for FType {
-        fn from_lossy(value: i64) -> Self {
-            value as Self
-        }
-    }
+    from_lossy_impl!(FType, i8);
+    from_lossy_impl!(FType, i32);
+    from_lossy_impl!(FType, i64);
 
-    impl FromLossy<u32> for FType {
-        fn from_lossy(value: u32) -> Self {
-            value as Self
-        }
-    }
+    from_lossy_impl!(FType, u8);
+    from_lossy_impl!(FType, u32);
+    from_lossy_impl!(FType, u64);
 
-    impl FromLossy<u64> for FType {
-        fn from_lossy(value: u64) -> Self {
-            value as Self
-        }
-    }
+    from_lossy_impl!(u8, FType);
+    from_lossy_impl!(u32, FType);
+    from_lossy_impl!(u64, FType);
 
-    impl FromLossy<f32> for FType {
-        fn from_lossy(value: f32) -> Self {
-            value as Self
-        }
-    }
+    from_lossy_impl!(i8, FType);
+    from_lossy_impl!(i32, FType);
+    from_lossy_impl!(i64, FType);
 
-    impl FromLossy<f64> for FType {
-        fn from_lossy(value: f64) -> Self {
-            value as Self
-        }
-    }
+    from_lossy_impl!(f64, FType);
+    from_lossy_impl!(f32, FType);
+
+    #[cfg(feature = "high_precision")]
+    from_lossy_impl!(FType, f32);
+
+    #[cfg(feature = "low_precision")]
+    from_lossy_impl!(FType, f64);
 
     impl Approximately for FType {
         fn approximately(&self, other: Self, epsilon: FType) -> bool {
@@ -264,6 +263,7 @@ mod equality_tests {
         assert_eq!(a.approximately(b, EPSILON), b.approximately(a, EPSILON));
     }
 
+    #[cfg(feature = "fixed_precision")]
     #[test]
     fn transitive_property() {
         let a = Float::from(1.0);

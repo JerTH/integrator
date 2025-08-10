@@ -268,6 +268,38 @@ impl Matrix {
             ]
         }
     }
+    
+    /// Vulkan/WebGPU (0..1 depth) symmetric ortho; right-handed.
+    #[rustfmt::skip]
+    pub fn orthographic_symmetric<F: Into<Float>>(
+        half_height: F,
+        aspect: F,
+        near: F,
+        far: F,
+    ) -> Self {
+        let t = half_height.into();
+        let r = aspect.into() * t;
+        let n = near.into();
+        let f = far.into();
+
+        assert!(t > Float::ZERO && r > Float::ZERO && f != n);
+
+        let sx = Float::ONE / r;
+        let sy = Float::ONE / t;
+        // z' = (z - n) / (f - n)  →  [ 0,0, 1/(f-n),  -n/(f-n) ]
+        let sz =  Float::ONE / (f - n);
+        let tz = -n / (f - n);
+
+        let zer = Float::ZERO;
+        let one = Float::ONE;
+
+        Self { elements: [
+            [sx,  zer, zer, zer],
+            [zer, sy,  zer, zer],
+            [zer, zer, sz,  tz ],
+            [zer, zer, zer, one],
+        ]}
+    }
 
     /// Construct a Vulkan perspective projection matrix
     #[rustfmt::skip]

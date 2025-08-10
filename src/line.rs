@@ -1,6 +1,6 @@
 //!
 //! Infinite lines in 3D space
-//! 
+//!
 
 use crate::segment::LineSegment;
 use crate::traits::Coincident;
@@ -13,7 +13,7 @@ use crate::Point;
 use crate::Vector;
 
 #[cfg(feature = "fixed_precision")]
-use crate::traits::Numeric;
+use crate::traits::FloatExt;
 
 use serde::Deserialize;
 use serde::Serialize;
@@ -81,12 +81,9 @@ impl Distance<Point> for &Line {
     fn distance_to(&self, other: &Point) -> Float {
         Float::sqrt(self.distance_to_sq(other))
     }
-    
+
     fn distance_to_sq(&self, other: &Point) -> Float {
-        (self.origin - other)
-            .cross(&self.direction)
-            .length_sq() 
-        / self.direction.length_sq()
+        (self.origin - other).cross(&self.direction).length_sq() / self.direction.length_sq()
     }
 }
 

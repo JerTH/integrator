@@ -1,5 +1,9 @@
 use crate::Float;
 use std::convert::Infallible;
+use std::num::NonZeroI32;
+use std::num::NonZeroI64;
+use std::num::NonZeroU32;
+use std::num::NonZeroU64;
 
 pub trait FloatExt {
     const ONE: Self;
@@ -77,6 +81,10 @@ pub trait Numeric: sealed::SealedNumeric {
     type Error;
     fn into_float(self) -> Float;
     fn try_into_float(&self) -> Result<Float, Self::Error>;
+
+    fn from_float(value: Float) -> Option<Self>
+    where
+        Self: Sized;
 }
 
 impl Numeric for f64 {
@@ -89,6 +97,10 @@ impl Numeric for f64 {
     fn try_into_float(&self) -> Result<Float, Self::Error> {
         Ok(*self)
     }
+
+    fn from_float(value: Float) -> Option<Self> {
+        Some(value)
+    }
 }
 
 impl Numeric for std::num::NonZeroU32 {
@@ -100,6 +112,17 @@ impl Numeric for std::num::NonZeroU32 {
 
     fn try_into_float(&self) -> Result<Float, Self::Error> {
         Ok(self.get() as Float)
+    }
+
+    fn from_float(value: Float) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if value > u32::MAX as f64 {
+            return None;
+        }
+
+        NonZeroU32::new(value as u32)
     }
 }
 
@@ -115,6 +138,17 @@ impl Numeric for std::num::NonZeroU64 {
     fn try_into_float(&self) -> Result<Float, Self::Error> {
         Ok(f64::from_lossy(self.get()))
     }
+
+    fn from_float(value: Float) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if value > u64::MAX as f64 {
+            return None;
+        }
+
+        NonZeroU64::new(value as u64)
+    }
 }
 
 impl Numeric for std::num::NonZeroI32 {
@@ -126,6 +160,17 @@ impl Numeric for std::num::NonZeroI32 {
 
     fn try_into_float(&self) -> Result<Float, Self::Error> {
         Ok(self.get() as Float)
+    }
+
+    fn from_float(value: Float) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if value.abs() > i32::MAX as f64 {
+            return None;
+        }
+
+        NonZeroI32::new(value as i32)
     }
 }
 
@@ -141,6 +186,109 @@ impl Numeric for std::num::NonZeroI64 {
     fn try_into_float(&self) -> Result<Float, Self::Error> {
         Ok(f64::from_lossy(self.get()))
     }
+
+    fn from_float(value: Float) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if value.abs() > i64::MAX as f64 {
+            return None;
+        }
+
+        NonZeroI64::new(value as i64)
+    }
+}
+
+impl Numeric for i8 {
+    type Error = Infallible;
+
+    fn into_float(self) -> Float {
+        self as Float
+    }
+
+    fn try_into_float(&self) -> Result<Float, Self::Error> {
+        Ok(f64::from_lossy(*self))
+    }
+
+    fn from_float(value: Float) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if value.abs() > i8::MAX as f64 {
+            return None;
+        }
+
+        Some(value as i8)
+    }
+}
+
+impl Numeric for i32 {
+    type Error = Infallible;
+
+    fn into_float(self) -> Float {
+        self as Float
+    }
+
+    fn try_into_float(&self) -> Result<Float, Self::Error> {
+        Ok(f64::from_lossy(*self))
+    }
+
+    fn from_float(value: Float) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if value.abs() > i32::MAX as f64 {
+            return None;
+        }
+
+        Some(value as i32)
+    }
+}
+
+impl Numeric for u8 {
+    type Error = Infallible;
+
+    fn into_float(self) -> Float {
+        self as Float
+    }
+
+    fn try_into_float(&self) -> Result<Float, Self::Error> {
+        Ok(f64::from_lossy(*self))
+    }
+
+    fn from_float(value: Float) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if value.abs() > u8::MAX as f64 {
+            return None;
+        }
+
+        Some(value as u8)
+    }
+}
+
+impl Numeric for u32 {
+    type Error = Infallible;
+
+    fn into_float(self) -> Float {
+        self as Float
+    }
+
+    fn try_into_float(&self) -> Result<Float, Self::Error> {
+        Ok(f64::from_lossy(*self))
+    }
+
+    fn from_float(value: Float) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        if value.abs() > i32::MAX as f64 {
+            return None;
+        }
+
+        Some(value as u32)
+    }
 }
 
 mod sealed {
@@ -148,10 +296,14 @@ mod sealed {
 
     impl SealedNumeric for f64 {}
     impl SealedNumeric for f32 {}
+
     impl SealedNumeric for u64 {}
     impl SealedNumeric for u32 {}
+    impl SealedNumeric for u8 {}
+
     impl SealedNumeric for i64 {}
     impl SealedNumeric for i32 {}
+    impl SealedNumeric for i8 {}
 
     impl SealedNumeric for std::num::NonZeroU32 {}
     impl SealedNumeric for std::num::NonZeroU64 {}

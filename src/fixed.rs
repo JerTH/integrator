@@ -229,7 +229,7 @@ impl Debug for Fixed {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         //let value: f64 = (*self).into();
         let value = self.0;
-        write!(f, "{:#?}", value)
+        write!(f, "{value:#?}")
     }
 }
 

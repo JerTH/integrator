@@ -771,7 +771,7 @@ mod vec_tests {
     #[test]
     fn approximately() {
         let v1 = Vector::new(1.0, 2.0, 3.0);
-        let v2 = Vector::new(1.0 + 1e-7, 2.0 - 1e-7, 3.0 + 1e-7);
+        let v2 = Vector::new(1.0 + 1e-17, 2.0 - 1e-17, 3.0 + 1e-17);
         assert!(v1.approximately(v2, Float::from(EPSILON)));
     }
 

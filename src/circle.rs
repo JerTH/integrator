@@ -9,7 +9,16 @@ pub struct Circle {
 }
 
 impl Circle {
+    pub fn new(center: Point, normal: Vector, radius: Float) -> Self {
+        let frame = normal * radius;
+        Self { center, frame }
+    }
+
     pub fn radius(&self) -> Float {
         self.frame.length()
+    }
+
+    pub fn center(&self) -> Point {
+        self.center
     }
 }

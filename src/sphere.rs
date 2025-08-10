@@ -60,13 +60,44 @@ impl Distance<Line> for Sphere {
 }
 
 impl Intersects for Sphere {
-    type Intersection = Circle;
+    type Intersection = Option<Circle>;
 
     fn interesects(&self, other: &Self) -> bool {
-        self.distance_to_sq(other) < 0.0
+        let d_sq = self.center.distance_to_sq(&other.center);
+        let r_sum = self.radius + other.radius;
+        let r_diff = (self.radius - other.radius).abs();
+        let r_diff_sq = r_diff.powi(2);
+        let r_sum_sq = r_sum.powi(2);
+        d_sq <= r_sum_sq && d_sq >= r_diff_sq
     }
 
-    fn intersection(&self, _: &Self) -> Self::Intersection {
-        todo!()
+    fn intersection(&self, other: &Self) -> Self::Intersection {
+        let direction = other.center - self.center;
+        let d_sq = direction.length_sq();
+        let d = d_sq.sqrt();
+
+        // Check if spheres intersect
+        let r_sum = self.radius + other.radius;
+        let r_diff = (self.radius - other.radius).abs();
+        if d > r_sum || d < r_diff {
+            return None;
+        }
+
+        if d == 0.0 {
+            if self.radius == other.radius {
+                // Intersection is the entire sphere, not representable as a circle
+                None
+            } else {
+                // One is entirely inside the other, no intersection circle
+                None
+            }
+        } else {
+            let h = (d_sq + self.radius.powi(2) - other.radius.powi(2)) / (2.0 * d);
+            let intersection_radius = (self.radius.powi(2) - h.powi(2)).sqrt();
+            let center = self.center + (direction * (h / d));
+            let normal = direction.normalized();
+
+            Some(Circle::new(center, normal, intersection_radius))
+        }
     }
 }
